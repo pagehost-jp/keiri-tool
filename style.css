@@ -510,10 +510,15 @@ h2 {
     border-radius: 8px;
     cursor: pointer;
     transition: transform 0.3s ease;
+    border: 3px solid #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    background: #f0f0f0;
 }
 
 .transaction-image:hover {
     transform: scale(1.05);
+    border-color: #764ba2;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
 }
 
 .transaction-details {
