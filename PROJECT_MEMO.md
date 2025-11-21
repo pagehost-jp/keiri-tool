@@ -8,9 +8,10 @@
 
 - 場所: `~/Desktop/keiri-tool`
 - 作成日: 2025-11-21
-- 技術: HTML/CSS/JavaScript, Tesseract.js (OCR), SheetJS (Excel)
+- 技術: HTML/CSS/JavaScript, Tesseract.js (OCR), SheetJS (Excel), Firebase/Firestore
 - **公開URL**: https://pagehost-jp.github.io/keiri-tool/
 - **GitHub**: https://github.com/pagehost-jp/keiri-tool
+- **Firebase**: keiri-tool-bc599 (Firestore)
 
 ---
 
@@ -69,6 +70,16 @@ keiri-tool/
 
 ### 8. レスポンシブ対応
 - [x] スマホ・PC両対応のCSS
+
+### 9. Gemini API連携（高精度OCR）
+- [x] APIキー設定UI
+- [x] Gemini APIで画像解析
+- [x] APIキーがない場合はTesseract.jsにフォールバック
+
+### 10. Firebase/Firestoreリアルタイム同期
+- [x] Firestoreでデータ保存・削除
+- [x] リアルタイム同期（複数ユーザーで同じデータを共有）
+- [x] オフライン対応（ローカルストレージにもバックアップ）
 
 ---
 
@@ -145,6 +156,12 @@ keiri-tool/
 ---
 
 ## 更新履歴
+
+### 2025-11-21（夜）- Firebase/Firestore連携
+- Firebase/Firestoreを追加してリアルタイムデータ同期を実装
+- 複数ユーザーで同じデータを共有可能に
+- 経理チームへの共有が可能に（同じURLで同じデータを閲覧・編集）
+- Gemini API設定機能を追加（高精度OCRモード）
 
 ### 2025-11-21（夕方）- 銀行振込画面対応
 - 銀行振込完了画面のOCR対応を追加
