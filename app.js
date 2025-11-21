@@ -256,16 +256,49 @@ async function handleFile(file) {
     // 画像プレビュー表示
     const reader = new FileReader();
     reader.onload = async (e) => {
-        currentImageUrl = e.target.result;
-        showImagePreview(currentImageUrl);
+        const originalImageUrl = e.target.result;
+        showImagePreview(originalImageUrl);
 
         // Base64データを取得（data:image/...;base64, の部分を除く）
-        currentImageData = e.target.result.split(',')[1];
+        currentImageData = originalImageUrl.split(',')[1];
 
-        // Claude APIで画像解析
+        // オリジナル画像でOCR解析（精度を保つため）
         await analyzeReceipt(currentImageData);
+
+        // OCR後に画像を圧縮して保存用に設定（容量節約）
+        currentImageUrl = await compressImage(originalImageUrl);
+        console.log('画像圧縮完了:', Math.round(originalImageUrl.length / 1024) + 'KB →', Math.round(currentImageUrl.length / 1024) + 'KB');
     };
     reader.readAsDataURL(file);
+}
+
+// 画像を圧縮（OCR後に実行、保存用）
+function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            // 最大幅を超える場合はリサイズ
+            if (width > maxWidth) {
+                height = Math.round(height * maxWidth / width);
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // JPEG形式で圧縮（qualityで品質調整）
+            const compressedUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressedUrl);
+        };
+        img.src = dataUrl;
+    });
 }
 
 // 画像プレビュー表示
