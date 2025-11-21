@@ -1480,8 +1480,18 @@ function updateAuthUI(user) {
         if (isAdmin) {
             adminPanel.classList.remove('hidden');
             loadPendingUsers();
+            // 管理者は全機能使用可能
+            document.querySelector('.upload-section').classList.remove('hidden');
+            document.getElementById('apiSettingsSection').classList.remove('hidden');
+            document.getElementById('backupBtn').classList.remove('hidden');
+            document.getElementById('restoreBtn').classList.remove('hidden');
         } else {
             adminPanel.classList.add('hidden');
+            // 経理は閲覧・エクスポートのみ（追加・API設定・バックアップは非表示）
+            document.querySelector('.upload-section').classList.add('hidden');
+            document.getElementById('apiSettingsSection').classList.add('hidden');
+            document.getElementById('backupBtn').classList.add('hidden');
+            document.getElementById('restoreBtn').classList.add('hidden');
         }
 
         // APIキーをFirestoreから読み込み
