@@ -1161,3 +1161,38 @@ h2 {
         text-align: left;
     }
 }
+
+/* iPhoneガイドリンク */
+.upload-hint {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.guide-link {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 0.95em;
+    padding: 8px 16px;
+    border: 1px solid #667eea;
+    border-radius: 20px;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.guide-link:hover {
+    background: #667eea;
+    color: white;
+}
+
+/* HEICプレビュー用プレースホルダー */
+.preview-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    color: #666;
+    font-size: 1.1em;
+    border: 2px dashed #ccc;
+}
