@@ -884,8 +884,8 @@ function renderTransactionList() {
         return true;
     });
 
-    // 日付順にソート（新しい順）
-    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // 日付順にソート（古い順 = 昇順）
+    filteredTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     // フィルターサマリー表示
     if (currentFilters.year || currentFilters.month || currentFilters.type || currentFilters.keyword) {
