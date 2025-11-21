@@ -1632,6 +1632,9 @@ function updateAuthUI(user) {
 
         // APIキーをFirestoreから読み込み
         loadUserApiKey(user.uid);
+
+        // 権限に応じて一覧を再描画（編集・削除ボタンの表示/非表示）
+        renderTransactionList();
     } else {
         // 承認待ち
         mainContent.classList.add('hidden');
