@@ -1202,100 +1202,119 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 10px;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
 }
 
 .year-nav-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: #667eea;
+    width: 44px;
+    height: 44px;
+    border: 2px solid white;
+    background: transparent;
     color: white;
     border-radius: 50%;
-    font-size: 1.2em;
+    font-size: 1.4em;
+    font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .year-nav-btn:hover {
-    background: #5a6fd6;
+    background: white;
+    color: #667eea;
     transform: scale(1.1);
 }
 
 .year-nav-btn:disabled {
-    background: #ccc;
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.5);
     cursor: not-allowed;
     transform: none;
 }
 
 .current-year {
-    font-size: 1.3em;
+    font-size: 1.8em;
     font-weight: bold;
-    color: #333;
-    min-width: 100px;
+    color: white;
+    min-width: 150px;
     text-align: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 /* 月別タブ */
 .month-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 15px;
-    padding: 10px;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 15px;
     background: #f8f9fa;
-    border-radius: 10px;
+    border-radius: 12px;
 }
 
 .month-tab {
-    padding: 8px 12px;
-    border: 2px solid #ddd;
+    padding: 12px 20px;
+    border: 2px solid #667eea;
     background: white;
-    border-radius: 20px;
-    font-size: 0.9em;
+    border-radius: 25px;
+    font-size: 1em;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
+    color: #667eea;
 }
 
 .month-tab:hover:not(.disabled) {
-    border-color: #667eea;
-    color: #667eea;
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .month-tab.active {
     background: #667eea;
     color: white;
     border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .month-tab.disabled {
-    background: #f0f0f0;
-    color: #bbb;
-    border-color: #e0e0e0;
+    background: #e9ecef;
+    color: #adb5bd;
+    border-color: #dee2e6;
     cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.month-tab.disabled:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .month-tab .count-badge {
     position: absolute;
-    top: -8px;
-    right: -8px;
+    top: -10px;
+    right: -10px;
     background: #ff6b6b;
     color: white;
-    font-size: 0.7em;
-    padding: 2px 6px;
-    border-radius: 10px;
-    min-width: 18px;
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 22px;
     text-align: center;
+    box-shadow: 0 2px 6px rgba(255, 107, 107, 0.4);
 }
 
 .month-tab.active .count-badge {
     background: white;
     color: #667eea;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* サブフィルター */
