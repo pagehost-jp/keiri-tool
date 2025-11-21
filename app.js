@@ -1477,6 +1477,7 @@ function updateAuthUI(user) {
     const userInfo = document.getElementById('userInfo');
     const userPhoto = document.getElementById('userPhoto');
     const userName = document.getElementById('userName');
+    const userRole = document.getElementById('userRole');
     const mainContent = document.querySelector('main');
     const pendingApproval = document.getElementById('pendingApproval');
     const adminPanel = document.getElementById('adminPanel');
@@ -1486,6 +1487,18 @@ function updateAuthUI(user) {
 
     userPhoto.src = user.photoURL || '';
     userName.textContent = user.displayName || user.email;
+
+    // 役割バッジを表示
+    if (isAdmin) {
+        userRole.textContent = '管理者';
+        userRole.className = 'user-role role-admin';
+    } else if (isApproved) {
+        userRole.textContent = '経理';
+        userRole.className = 'user-role role-staff';
+    } else {
+        userRole.textContent = '承認待ち';
+        userRole.className = 'user-role role-pending';
+    }
 
     if (isApproved) {
         // 承認済み - メインコンテンツを表示

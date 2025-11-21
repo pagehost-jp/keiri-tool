@@ -796,6 +796,28 @@ h2 {
     color: white;
 }
 
+.user-role {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.role-admin {
+    background: #ff6b6b;
+    color: white;
+}
+
+.role-staff {
+    background: #4ecdc4;
+    color: white;
+}
+
+.role-pending {
+    background: #ffd93d;
+    color: #333;
+}
+
 .btn-logout {
     padding: 6px 14px;
     background: rgba(255, 255, 255, 0.2);
