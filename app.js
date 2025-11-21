@@ -808,14 +808,14 @@ function renderTransactionList() {
     }
 
     listContainer.innerHTML = filteredTransactions.map(transaction => `
-        <div class="transaction-item">
+        <div class="transaction-item" onclick="showTransactionDetail(${transaction.id})" style="cursor: pointer;">
             ${transaction.imageUrl ? `
-                <img src="${transaction.imageUrl}" alt="領収書" class="transaction-image" onclick="showImageModal('${transaction.imageUrl}')">
-            ` : ''}
+                <img src="${transaction.imageUrl}" alt="領収書" class="transaction-image" onclick="event.stopPropagation(); showImageModal('${transaction.imageUrl}')">
+            ` : '<div class="no-image">画像なし</div>'}
             <div class="transaction-details">
                 <strong>${transaction.amount.toLocaleString()}円</strong>
-                <p>${transaction.purpose}</p>
-                <p>日付: ${transaction.date}</p>
+                <p class="purpose-text">${transaction.purpose}</p>
+                <p class="date-text">日付: ${transaction.date}</p>
                 <div class="transaction-meta">
                     <span class="badge badge-payment">${transaction.paymentMethod}</span>
                     ${transaction.paymentDetail ? `<span class="badge badge-detail">${transaction.paymentDetail}</span>` : ''}
@@ -823,10 +823,10 @@ function renderTransactionList() {
                         ${transaction.transactionType}
                     </span>
                 </div>
-                ${transaction.notes ? `<p style="font-size: 0.9em; color: #888;">メモ: ${transaction.notes}</p>` : ''}
+                ${transaction.notes ? `<p class="notes-preview">メモ: ${transaction.notes.length > 30 ? transaction.notes.substring(0, 30) + '...' : transaction.notes}</p>` : ''}
             </div>
             ${isAdmin ? `
-                <div class="transaction-actions">
+                <div class="transaction-actions" onclick="event.stopPropagation()">
                     <div class="action-menu">
                         <button class="btn-menu" onclick="toggleActionMenu(this)">⋮</button>
                         <div class="action-dropdown">
@@ -882,6 +882,111 @@ function showImageModal(imageUrl) {
             </body>
         </html>
     `);
+}
+
+// 取引詳細モーダル表示
+function showTransactionDetail(id) {
+    const transaction = transactions.find(t => t.id === id);
+    if (!transaction) return;
+
+    // 既存のモーダルがあれば削除
+    const existingModal = document.getElementById('detailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'detailModal';
+    modal.className = 'detail-modal';
+    modal.innerHTML = `
+        <div class="detail-modal-overlay" onclick="closeDetailModal()"></div>
+        <div class="detail-modal-content">
+            <button class="detail-modal-close" onclick="closeDetailModal()">×</button>
+            <h2>取引詳細</h2>
+
+            ${transaction.imageUrl ? `
+                <div class="detail-image-container">
+                    <img src="${transaction.imageUrl}" alt="領収書" class="detail-image" onclick="showImageModal('${transaction.imageUrl}')">
+                    <p class="detail-image-hint">クリックで拡大</p>
+                </div>
+            ` : ''}
+
+            <div class="detail-info">
+                <div class="detail-row">
+                    <span class="detail-label">金額</span>
+                    <span class="detail-value detail-amount ${transaction.transactionType === '出金' ? 'outgoing' : 'incoming'}">
+                        ${transaction.transactionType === '出金' ? '-' : '+'}${transaction.amount.toLocaleString()}円
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">用途</span>
+                    <span class="detail-value">${transaction.purpose}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">日付</span>
+                    <span class="detail-value">${transaction.date}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">支払い方法</span>
+                    <span class="detail-value">${transaction.paymentMethod}</span>
+                </div>
+                ${transaction.paymentDetail ? `
+                    <div class="detail-row">
+                        <span class="detail-label">口座・カード</span>
+                        <span class="detail-value">${transaction.paymentDetail}</span>
+                    </div>
+                ` : ''}
+                <div class="detail-row">
+                    <span class="detail-label">種別</span>
+                    <span class="detail-value">${transaction.transactionType}</span>
+                </div>
+                ${transaction.notes ? `
+                    <div class="detail-row">
+                        <span class="detail-label">メモ</span>
+                        <span class="detail-value detail-notes">${transaction.notes}</span>
+                    </div>
+                ` : ''}
+                <div class="detail-row detail-meta">
+                    <span class="detail-label">登録日時</span>
+                    <span class="detail-value">${new Date(transaction.createdAt).toLocaleString('ja-JP')}</span>
+                </div>
+                ${transaction.updatedAt ? `
+                    <div class="detail-row detail-meta">
+                        <span class="detail-label">更新日時</span>
+                        <span class="detail-value">${new Date(transaction.updatedAt).toLocaleString('ja-JP')}</span>
+                    </div>
+                ` : ''}
+            </div>
+
+            ${isAdmin ? `
+                <div class="detail-actions">
+                    <button class="btn btn-secondary" onclick="closeDetailModal(); editTransaction(${transaction.id});">編集</button>
+                    <button class="btn btn-danger" onclick="closeDetailModal(); deleteTransaction(${transaction.id});">削除</button>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // ESCキーで閉じる
+    document.addEventListener('keydown', handleModalEscape);
+}
+
+// モーダルをESCで閉じるハンドラー
+function handleModalEscape(e) {
+    if (e.key === 'Escape') {
+        closeDetailModal();
+    }
+}
+
+// 詳細モーダルを閉じる
+function closeDetailModal() {
+    const modal = document.getElementById('detailModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.removeEventListener('keydown', handleModalEscape);
 }
 
 // 編集中の取引ID

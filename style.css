@@ -965,3 +965,199 @@ h2 {
         text-align: center;
     }
 }
+
+/* 画像なしの場合のプレースホルダー */
+.no-image {
+    width: 100px;
+    height: 100px;
+    background: #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 0.85em;
+    border: 3px dashed #ccc;
+}
+
+/* カード内のメモプレビュー */
+.notes-preview {
+    font-size: 0.9em;
+    color: #888;
+    margin-top: 8px;
+}
+
+/* 詳細モーダル */
+.detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.detail-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.detail-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.detail-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.8em;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+}
+
+.detail-modal-close:hover {
+    color: #333;
+}
+
+.detail-modal-content h2 {
+    margin: 0 0 20px 0;
+    padding: 0;
+    border: none;
+    color: #333;
+    font-size: 1.3em;
+}
+
+.detail-image-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.detail-image {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 3px solid #667eea;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: transform 0.2s;
+}
+
+.detail-image:hover {
+    transform: scale(1.02);
+}
+
+.detail-image-hint {
+    font-size: 0.8em;
+    color: #999;
+    margin-top: 8px;
+}
+
+.detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #666;
+    min-width: 100px;
+}
+
+.detail-value {
+    text-align: right;
+    color: #333;
+    flex: 1;
+    word-break: break-word;
+}
+
+.detail-amount {
+    font-size: 1.4em;
+    font-weight: bold;
+}
+
+.detail-amount.outgoing {
+    color: #e53935;
+}
+
+.detail-amount.incoming {
+    color: #2e7d32;
+}
+
+.detail-notes {
+    white-space: pre-wrap;
+    text-align: left;
+    background: #f8f9ff;
+    padding: 10px;
+    border-radius: 6px;
+    width: 100%;
+}
+
+.detail-meta {
+    font-size: 0.85em;
+    color: #999;
+}
+
+.detail-meta .detail-label,
+.detail-meta .detail-value {
+    color: #999;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.detail-actions .btn {
+    flex: 1;
+}
+
+/* レスポンシブ対応（モーダル） */
+@media (max-width: 768px) {
+    .detail-modal-content {
+        padding: 20px;
+        max-height: 85vh;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .detail-value {
+        text-align: left;
+    }
+}
