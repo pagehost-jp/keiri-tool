@@ -40,10 +40,18 @@
         <div id="adminPanel" class="admin-panel hidden">
             <h3>承認待ちユーザー</h3>
             <div id="pendingUsersList"></div>
-            <hr style="margin: 20px 0;">
-            <h3>データ管理</h3>
-            <button id="cleanupDuplicatesBtn" class="btn btn-danger">重複データを削除</button>
-            <button id="deleteAllDataBtn" class="btn btn-danger" style="margin-left: 10px;">全データ削除</button>
+
+            <!-- 危険な操作は折りたたみ -->
+            <details class="admin-danger-section">
+                <summary class="admin-danger-toggle">管理者用：危険な操作</summary>
+                <div class="admin-danger-content">
+                    <p class="danger-warning">以下の操作は取り消せません。慎重に実行してください。</p>
+                    <div class="danger-buttons">
+                        <button id="cleanupDuplicatesBtn" class="btn btn-danger-outline">重複データを削除</button>
+                        <button id="deleteAllDataBtn" class="btn btn-danger-outline">全データ削除</button>
+                    </div>
+                </div>
+            </details>
         </div>
 
         <main>
