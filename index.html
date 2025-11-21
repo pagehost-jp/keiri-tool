@@ -14,6 +14,38 @@
         </header>
 
         <main>
+            <!-- API設定セクション -->
+            <section class="api-settings-section" id="apiSettingsSection">
+                <div class="api-settings-header">
+                    <h2>API設定</h2>
+                    <button id="toggleApiSettings" class="btn btn-secondary">設定を隠す</button>
+                </div>
+                <div class="api-settings-content" id="apiSettingsContent">
+                    <div class="api-info">
+                        <p><strong>Gemini API</strong>を使うと、OCR精度が大幅に向上します（手書き・斜め文字も認識可能）</p>
+                        <p>APIキーがない場合は、無料のTesseract.jsで読み取ります。</p>
+                    </div>
+                    <div class="api-input-group">
+                        <label for="geminiApiKey">Gemini APIキー:</label>
+                        <div class="api-input-wrapper">
+                            <input type="password" id="geminiApiKey" placeholder="AIza...">
+                            <button type="button" id="saveApiKey" class="btn btn-primary">保存</button>
+                            <button type="button" id="clearApiKey" class="btn btn-secondary">削除</button>
+                        </div>
+                    </div>
+                    <div class="api-status" id="apiStatus"></div>
+                    <div class="api-help">
+                        <p><strong>APIキーの取得方法:</strong></p>
+                        <ol>
+                            <li><a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>を開く</li>
+                            <li>Googleアカウントでログイン</li>
+                            <li>「Create API Key」をクリック</li>
+                            <li>キーをコピーして上に貼り付け</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
             <!-- 画像アップロードセクション -->
             <section class="upload-section">
                 <h2>領収書を追加</h2>

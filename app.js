@@ -12,14 +12,19 @@ let currentFilters = {
 // ローカルストレージのキー
 const STORAGE_KEY = 'keiri_transactions';
 const PAYMENT_DETAILS_KEY = 'keiri_payment_details';
+const GEMINI_API_KEY = 'keiri_gemini_api_key';
 
 // カスタム支払い詳細の選択肢
 let paymentDetailOptions = [];
+
+// Gemini APIキー
+let geminiApiKey = null;
 
 // DOMロード時の初期化
 document.addEventListener('DOMContentLoaded', () => {
     loadTransactions();
     loadPaymentDetailOptions();
+    loadGeminiApiKey();
     updateYearOptions();
     updateMonthOptions();
     updateTypeOptions();
@@ -27,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setupFormValidation();
     setupFilterListeners();
+    setupApiSettingsListeners();
 });
 
 // フォームバリデーションの設定（日本語メッセージ）
@@ -242,7 +248,7 @@ function showImagePreview(imageUrl) {
     previewArea.innerHTML = `<img src="${imageUrl}" alt="領収書プレビュー">`;
 }
 
-// Tesseract.js (OCR) で領収書を解析（完全無料・APIキー不要）
+// 領収書を解析（Gemini API優先、なければTesseract.js）
 async function analyzeReceipt(imageData) {
     const loadingIndicator = document.getElementById('loadingIndicator');
     const formSection = document.getElementById('formSection');
@@ -250,21 +256,18 @@ async function analyzeReceipt(imageData) {
     loadingIndicator.classList.remove('hidden');
 
     try {
-        // Tesseract.js でOCR実行
-        const { data: { text } } = await Tesseract.recognize(
-            currentImageUrl,
-            'jpn',  // 日本語認識
-            {
-                logger: info => {
-                    console.log(info);
-                }
-            }
-        );
+        let extractedData;
 
-        console.log('OCR結果:', text);
+        if (geminiApiKey) {
+            // Gemini APIで解析
+            console.log('Gemini APIで解析中...');
+            extractedData = await analyzeWithGemini(imageData);
+        } else {
+            // Tesseract.jsで解析（フォールバック）
+            console.log('Tesseract.jsで解析中...');
+            extractedData = await analyzeWithTesseract();
+        }
 
-        // テキストから情報を抽出
-        const extractedData = extractDataFromText(text);
         fillFormWithExtractedData(extractedData);
 
     } catch (error) {
@@ -275,6 +278,88 @@ async function analyzeReceipt(imageData) {
         loadingIndicator.classList.add('hidden');
         formSection.classList.remove('hidden');
     }
+}
+
+// Gemini APIで画像解析
+async function analyzeWithGemini(imageData) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+
+    const prompt = `この領収書/レシート画像から以下の情報を抽出してください。
+JSON形式で回答してください（他の文章は不要）:
+{
+  "date": "YYYY-MM-DD形式の日付",
+  "amount": 数字のみ（カンマなし）,
+  "purpose": "店舗名や用途",
+  "paymentMethod": "現金" or "クレジットカード" or "銀行振込" or "その他"
+}
+
+読み取れない項目はnullにしてください。`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    {
+                        inline_data: {
+                            mime_type: 'image/jpeg',
+                            data: imageData
+                        }
+                    }
+                ]
+            }]
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Gemini APIエラー');
+    }
+
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log('Gemini応答:', responseText);
+
+    // JSONを抽出
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return {
+                date: parsed.date || null,
+                amount: parsed.amount ? String(parsed.amount) : null,
+                purpose: parsed.purpose || null,
+                paymentMethod: parsed.paymentMethod || null
+            };
+        } catch (e) {
+            console.error('JSON解析エラー:', e);
+        }
+    }
+
+    // JSONが取れなかった場合はTesseractにフォールバック
+    console.log('Gemini応答をパースできません。Tesseractにフォールバック...');
+    return await analyzeWithTesseract();
+}
+
+// Tesseract.jsで画像解析
+async function analyzeWithTesseract() {
+    const { data: { text } } = await Tesseract.recognize(
+        currentImageUrl,
+        'jpn',
+        {
+            logger: info => {
+                console.log(info);
+            }
+        }
+    );
+
+    console.log('OCR結果:', text);
+    return extractDataFromText(text);
 }
 
 // OCRで取得したテキストから情報を抽出
@@ -936,4 +1021,86 @@ function restoreData(event) {
     };
 
     reader.readAsText(file);
+}
+
+// ========== Gemini API設定関連 ==========
+
+// APIキーを読み込み
+function loadGeminiApiKey() {
+    const saved = localStorage.getItem(GEMINI_API_KEY);
+    if (saved) {
+        geminiApiKey = saved;
+        document.getElementById('geminiApiKey').value = saved;
+        updateApiStatus(true);
+        // APIキーが設定済みなら設定を畳む
+        document.getElementById('apiSettingsContent').classList.add('collapsed');
+        document.getElementById('toggleApiSettings').textContent = '設定を表示';
+    }
+}
+
+// APIキーを保存
+function saveGeminiApiKey() {
+    const input = document.getElementById('geminiApiKey');
+    const key = input.value.trim();
+
+    if (!key) {
+        alert('APIキーを入力してください');
+        return;
+    }
+
+    if (!key.startsWith('AIza')) {
+        alert('無効なAPIキーです。AIza で始まるキーを入力してください。');
+        return;
+    }
+
+    geminiApiKey = key;
+    localStorage.setItem(GEMINI_API_KEY, key);
+    updateApiStatus(true);
+    alert('APIキーを保存しました。Gemini APIで高精度な読み取りが可能になりました！');
+}
+
+// APIキーを削除
+function clearGeminiApiKey() {
+    if (confirm('APIキーを削除しますか？\n削除後はTesseract.js（精度低め）で読み取ります。')) {
+        geminiApiKey = null;
+        localStorage.removeItem(GEMINI_API_KEY);
+        document.getElementById('geminiApiKey').value = '';
+        updateApiStatus(false);
+    }
+}
+
+// APIステータス表示を更新
+function updateApiStatus(isSet) {
+    const status = document.getElementById('apiStatus');
+    if (isSet) {
+        status.textContent = 'Gemini API: 有効（高精度モード）';
+        status.className = 'api-status success';
+    } else {
+        status.textContent = 'Gemini API: 未設定（Tesseract.jsで読み取り）';
+        status.className = 'api-status';
+        status.style.display = 'block';
+        status.style.background = '#fff3cd';
+        status.style.color = '#856404';
+    }
+}
+
+// API設定のイベントリスナー
+function setupApiSettingsListeners() {
+    const saveBtn = document.getElementById('saveApiKey');
+    const clearBtn = document.getElementById('clearApiKey');
+    const toggleBtn = document.getElementById('toggleApiSettings');
+    const content = document.getElementById('apiSettingsContent');
+
+    saveBtn.addEventListener('click', saveGeminiApiKey);
+    clearBtn.addEventListener('click', clearGeminiApiKey);
+
+    toggleBtn.addEventListener('click', () => {
+        content.classList.toggle('collapsed');
+        toggleBtn.textContent = content.classList.contains('collapsed') ? '設定を表示' : '設定を隠す';
+    });
+
+    // 初期状態でAPIキーがなければステータス表示
+    if (!geminiApiKey) {
+        updateApiStatus(false);
+    }
 }
