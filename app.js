@@ -669,27 +669,17 @@ async function handleFormSubmit(event) {
         addPaymentDetailOption(paymentDetail);
     }
 
-    // Firestoreに保存
+    // Firestoreに保存（onSnapshotが自動で一覧を更新する）
     await saveTransactionToFirestore(transaction);
 
     if (editingTransactionId) {
-        // 編集モード: ローカル配列を更新
-        const index = transactions.findIndex(t => t.id === editingTransactionId);
-        if (index !== -1) {
-            transactions[index] = transaction;
-        }
         alert('取引を更新しました！');
     } else {
-        // 新規モード: ローカル配列に追加
-        transactions.unshift(transaction);
-        alert('取引を保存しました！（クラウドに同期済み）');
+        alert('取引を保存しました！');
     }
 
-    saveTransactions();
-    updateYearOptions();
-    updateMonthOptions();
-    updateTypeOptions();
-    renderTransactionList();
+    // Firestoreの onSnapshot が自動で transactions を更新＆renderTransactionList() を呼ぶので
+    // ここでは手動更新しない（二重表示防止）
     resetForm();
 }
 
