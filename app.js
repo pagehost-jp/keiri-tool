@@ -1088,12 +1088,10 @@ function saveTransactions() {
 
 // Firestoreからリアルタイムで読み込み
 function loadTransactions() {
-    // まずローカルストレージから読み込み（オフライン対応）
+    // まずローカルストレージから読み込み（オフライン時の表示用）
     const saved = localStorage.getItem(STORAGE_KEY);
-    let localTransactions = [];
     if (saved) {
-        localTransactions = JSON.parse(saved);
-        transactions = localTransactions;
+        transactions = JSON.parse(saved);
         renderTransactionList();
     }
 
@@ -1106,7 +1104,6 @@ function loadTransactions() {
         .orderBy('createdAt', 'desc')
         .onSnapshot((snapshot) => {
             // ローカルの保留中の書き込みは無視（二重表示防止）
-            // サーバー確認済みのデータのみ表示
             if (snapshot.metadata.hasPendingWrites) {
                 console.log('保留中の書き込みをスキップ');
                 return;
@@ -1117,22 +1114,8 @@ function loadTransactions() {
                 transactions.push(doc.data());
             });
 
-            // ローカルにもバックアップ
+            // ローカルにもバックアップ（Firestoreのデータで上書き）
             localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-
-            // ローカルにあってFirestoreにないデータをアップロード
-            if (localTransactions.length > 0 && transactions.length === 0) {
-                console.log('ローカルデータをFirestoreにアップロード中...');
-                uploadLocalDataToFirestore(localTransactions);
-            } else if (localTransactions.length > transactions.length) {
-                // ローカルの方が多い場合、差分をアップロード
-                const firestoreIds = new Set(transactions.map(t => t.id));
-                const missingData = localTransactions.filter(t => !firestoreIds.has(t.id));
-                if (missingData.length > 0) {
-                    console.log('不足データをFirestoreにアップロード中:', missingData.length, '件');
-                    uploadLocalDataToFirestore(missingData);
-                }
-            }
 
             updateYearOptions();
             updateMonthOptions();
@@ -1770,6 +1753,17 @@ function showLoginPrompt() {
 function loadPendingUsers() {
     const pendingUsersList = document.getElementById('pendingUsersList');
 
+    // データ管理ボタンのイベントリスナー
+    const cleanupBtn = document.getElementById('cleanupDuplicatesBtn');
+    const deleteAllBtn = document.getElementById('deleteAllDataBtn');
+
+    if (cleanupBtn) {
+        cleanupBtn.onclick = cleanupDuplicates;
+    }
+    if (deleteAllBtn) {
+        deleteAllBtn.onclick = deleteAllData;
+    }
+
     db.collection('users')
         .where('isApproved', '==', false)
         .onSnapshot((snapshot) => {
@@ -1814,6 +1808,103 @@ async function approveUser(uid) {
     } catch (error) {
         console.error('承認エラー:', error);
         alert('承認に失敗しました: ' + error.message);
+    }
+}
+
+// 重複データを削除（同じ日付・金額・用途のデータを1つだけ残す）
+async function cleanupDuplicates() {
+    if (!confirm('重複データを検出して削除します。\n同じ「日付・金額・用途」のデータは1つだけ残します。\n\n続けますか？')) {
+        return;
+    }
+
+    try {
+        const snapshot = await db.collection('transactions').get();
+        const allDocs = [];
+        snapshot.forEach(doc => {
+            allDocs.push({ id: doc.id, data: doc.data() });
+        });
+
+        console.log('全データ数:', allDocs.length);
+
+        // 重複を検出（日付・金額・用途でグループ化）
+        const seen = new Map();
+        const duplicateIds = [];
+
+        allDocs.forEach(doc => {
+            const key = `${doc.data.date}_${doc.data.amount}_${doc.data.purpose}`;
+            if (seen.has(key)) {
+                // 重複 - 削除対象に追加
+                duplicateIds.push(doc.id);
+            } else {
+                seen.set(key, doc.id);
+            }
+        });
+
+        console.log('重複データ数:', duplicateIds.length);
+
+        if (duplicateIds.length === 0) {
+            alert('重複データはありませんでした。');
+            return;
+        }
+
+        if (!confirm(`${duplicateIds.length}件の重複データを削除します。\n本当に続けますか？`)) {
+            return;
+        }
+
+        // 削除実行
+        let deleted = 0;
+        for (const id of duplicateIds) {
+            await db.collection('transactions').doc(id).delete();
+            deleted++;
+            if (deleted % 10 === 0) {
+                console.log(`${deleted}/${duplicateIds.length} 削除完了`);
+            }
+        }
+
+        alert(`${deleted}件の重複データを削除しました。`);
+
+    } catch (error) {
+        console.error('重複削除エラー:', error);
+        alert('エラーが発生しました: ' + error.message);
+    }
+}
+
+// 全データを削除
+async function deleteAllData() {
+    if (!confirm('⚠️ 警告 ⚠️\n\n全てのデータを削除します。\nこの操作は取り消せません。\n\n本当に続けますか？')) {
+        return;
+    }
+
+    if (!confirm('本当に全データを削除しますか？\n\n「OK」を押すと全てのデータが削除されます。')) {
+        return;
+    }
+
+    try {
+        const snapshot = await db.collection('transactions').get();
+        const total = snapshot.size;
+
+        if (total === 0) {
+            alert('削除するデータがありません。');
+            return;
+        }
+
+        let deleted = 0;
+        for (const doc of snapshot.docs) {
+            await doc.ref.delete();
+            deleted++;
+            if (deleted % 10 === 0) {
+                console.log(`${deleted}/${total} 削除完了`);
+            }
+        }
+
+        // ローカルストレージもクリア
+        localStorage.removeItem(STORAGE_KEY);
+
+        alert(`${deleted}件のデータを削除しました。`);
+
+    } catch (error) {
+        console.error('全削除エラー:', error);
+        alert('エラーが発生しました: ' + error.message);
     }
 }
 
