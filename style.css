@@ -571,6 +571,50 @@ h2 {
     gap: 10px;
 }
 
+/* アクションメニュー（⋮ボタン） */
+.action-menu {
+    position: relative;
+}
+
+.btn-menu {
+    background: transparent;
+    border: none;
+    font-size: 1.5em;
+    padding: 5px 10px;
+    cursor: pointer;
+    color: #666;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-menu:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.action-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    min-width: 100px;
+    z-index: 100;
+}
+
+.action-dropdown.show {
+    display: block;
+}
+
+.action-dropdown .btn {
+    width: 100%;
+    text-align: center;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     body {

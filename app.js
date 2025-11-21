@@ -786,12 +786,44 @@ function renderTransactionList() {
                 </div>
                 ${transaction.notes ? `<p style="font-size: 0.9em; color: #888;">メモ: ${transaction.notes}</p>` : ''}
             </div>
-            <div class="transaction-actions">
-                <button class="btn btn-danger" onclick="deleteTransaction(${transaction.id})">削除</button>
-            </div>
+            ${isAdmin ? `
+                <div class="transaction-actions">
+                    <div class="action-menu">
+                        <button class="btn-menu" onclick="toggleActionMenu(this)">⋮</button>
+                        <div class="action-dropdown">
+                            <button class="btn btn-danger" onclick="deleteTransaction(${transaction.id})">削除</button>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         </div>
     `).join('');
 }
+
+// アクションメニューの表示/非表示を切り替え
+function toggleActionMenu(button) {
+    const dropdown = button.nextElementSibling;
+    const isOpen = dropdown.classList.contains('show');
+
+    // 他のメニューを閉じる
+    document.querySelectorAll('.action-dropdown.show').forEach(d => {
+        d.classList.remove('show');
+    });
+
+    // このメニューを切り替え
+    if (!isOpen) {
+        dropdown.classList.add('show');
+    }
+}
+
+// ページのどこかをクリックしたらメニューを閉じる
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.action-menu')) {
+        document.querySelectorAll('.action-dropdown.show').forEach(d => {
+            d.classList.remove('show');
+        });
+    }
+});
 
 // 画像モーダル表示（簡易版）
 function showImageModal(imageUrl) {
