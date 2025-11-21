@@ -1394,8 +1394,24 @@ async function googleLogin() {
         await auth.signInWithPopup(provider);
     } catch (error) {
         console.error('ログインエラー:', error);
-        alert('ログインに失敗しました: ' + error.message);
+        const errorMessage = getJapaneseErrorMessage(error.code);
+        alert('ログインに失敗しました:\n' + errorMessage);
     }
+}
+
+// Firebaseエラーを日本語に変換
+function getJapaneseErrorMessage(errorCode) {
+    const errorMessages = {
+        'auth/unauthorized-domain': 'このドメインは許可されていません。\n管理者にFirebase設定を確認してもらってください。',
+        'auth/popup-closed-by-user': 'ログイン画面が閉じられました。\nもう一度お試しください。',
+        'auth/popup-blocked': 'ポップアップがブロックされました。\nブラウザの設定を確認してください。',
+        'auth/cancelled-popup-request': 'ログインがキャンセルされました。',
+        'auth/network-request-failed': 'ネットワークエラーです。\nインターネット接続を確認してください。',
+        'auth/user-disabled': 'このアカウントは無効化されています。',
+        'auth/operation-not-allowed': 'Googleログインが有効になっていません。',
+        'auth/internal-error': '内部エラーが発生しました。しばらく待ってからお試しください。'
+    };
+    return errorMessages[errorCode] || `エラーが発生しました (${errorCode})`;
 }
 
 // ログアウト
