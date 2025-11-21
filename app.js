@@ -1,3 +1,17 @@
+// ========== Firebase設定 ==========
+const firebaseConfig = {
+    apiKey: "AIzaSyD40rFptPsrU7tX3Mcv0l04BuKGdozGies",
+    authDomain: "keiri-tool-bc599.firebaseapp.com",
+    projectId: "keiri-tool-bc599",
+    storageBucket: "keiri-tool-bc599.firebasestorage.app",
+    messagingSenderId: "15125801388",
+    appId: "1:15125801388:web:60f0e1fe484b8cb938b209"
+};
+
+// Firebase初期化
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 // グローバル変数
 let transactions = [];
 let currentImageData = null;
@@ -9,7 +23,7 @@ let currentFilters = {
     keyword: ''
 };
 
-// ローカルストレージのキー
+// ローカルストレージのキー（APIキーなど個人設定用）
 const STORAGE_KEY = 'keiri_transactions';
 const PAYMENT_DETAILS_KEY = 'keiri_payment_details';
 const GEMINI_API_KEY = 'keiri_gemini_api_key';
@@ -19,6 +33,9 @@ let paymentDetailOptions = [];
 
 // Gemini APIキー
 let geminiApiKey = null;
+
+// Firestoreのリアルタイムリスナー解除用
+let unsubscribeFirestore = null;
 
 // DOMロード時の初期化
 document.addEventListener('DOMContentLoaded', () => {
@@ -617,7 +634,7 @@ function setTodayDate() {
 }
 
 // フォーム送信処理
-function handleFormSubmit(event) {
+async function handleFormSubmit(event) {
     event.preventDefault();
 
     const paymentDetail = document.getElementById('paymentDetail').value.trim();
@@ -640,7 +657,11 @@ function handleFormSubmit(event) {
         addPaymentDetailOption(paymentDetail);
     }
 
-    transactions.unshift(transaction); // 新しいものを先頭に
+    // Firestoreに保存
+    await saveTransactionToFirestore(transaction);
+
+    // ローカルにも追加（Firestoreの同期が遅れた場合の即時表示用）
+    transactions.unshift(transaction);
     saveTransactions();
     updateYearOptions();
     updateMonthOptions();
@@ -648,7 +669,7 @@ function handleFormSubmit(event) {
     renderTransactionList();
     resetForm();
 
-    alert('取引を保存しました！');
+    alert('取引を保存しました！（クラウドに同期済み）');
 }
 
 // フォームリセット
@@ -779,8 +800,12 @@ function showImageModal(imageUrl) {
 }
 
 // 取引削除
-function deleteTransaction(id) {
+async function deleteTransaction(id) {
     if (confirm('この取引を削除しますか？')) {
+        // Firestoreから削除
+        await deleteTransactionFromFirestore(id);
+
+        // ローカルからも削除（即時反映用）
         transactions = transactions.filter(t => t.id !== id);
         saveTransactions();
         updateYearOptions();
@@ -790,17 +815,78 @@ function deleteTransaction(id) {
     }
 }
 
-// ローカルストレージに保存
+// Firestoreに保存（1件追加）
+async function saveTransactionToFirestore(transaction) {
+    try {
+        // 画像データが大きすぎる場合は保存しない（Firestoreの1MB制限）
+        const transactionData = { ...transaction };
+        if (transactionData.imageUrl && transactionData.imageUrl.length > 900000) {
+            console.warn('画像が大きすぎるため、画像なしで保存します');
+            transactionData.imageUrl = null;
+        }
+
+        await db.collection('transactions').doc(String(transaction.id)).set(transactionData);
+        console.log('Firestoreに保存しました:', transaction.id);
+    } catch (error) {
+        console.error('Firestore保存エラー:', error);
+        // フォールバック: ローカルストレージにも保存
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    }
+}
+
+// Firestoreから削除
+async function deleteTransactionFromFirestore(id) {
+    try {
+        await db.collection('transactions').doc(String(id)).delete();
+        console.log('Firestoreから削除しました:', id);
+    } catch (error) {
+        console.error('Firestore削除エラー:', error);
+    }
+}
+
+// ローカルストレージに保存（バックアップ用）
 function saveTransactions() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
 }
 
-// ローカルストレージから読み込み
+// Firestoreからリアルタイムで読み込み
 function loadTransactions() {
+    // まずローカルストレージから読み込み（オフライン対応）
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         transactions = JSON.parse(saved);
+        renderTransactionList();
     }
+
+    // Firestoreからリアルタイムで同期
+    if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+    }
+
+    unsubscribeFirestore = db.collection('transactions')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+            transactions = [];
+            snapshot.forEach((doc) => {
+                transactions.push(doc.data());
+            });
+
+            // ローカルにもバックアップ
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+
+            updateYearOptions();
+            updateMonthOptions();
+            updateTypeOptions();
+            renderTransactionList();
+            console.log('Firestoreから同期しました:', transactions.length, '件');
+        }, (error) => {
+            console.error('Firestore同期エラー:', error);
+            // エラー時はローカルストレージから読み込み
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                transactions = JSON.parse(saved);
+            }
+        });
 }
 
 // カスタム支払い詳細の選択肢を読み込み
