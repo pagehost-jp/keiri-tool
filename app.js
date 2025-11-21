@@ -11,6 +11,12 @@ const firebaseConfig = {
 // Firebase初期化
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
+
+// 現在のユーザー情報
+let currentUser = null;
+let isAdmin = false;
+let isApproved = false;
 
 // グローバル変数
 let transactions = [];
@@ -40,6 +46,7 @@ let unsubscribeFirestore = null;
 
 // DOMロード時の初期化
 document.addEventListener('DOMContentLoaded', () => {
+    setupAuth();  // 認証を最初にセットアップ
     loadTransactions();
     loadPaymentDetailOptions();
     loadGeminiApiKey();
@@ -1252,7 +1259,7 @@ function loadGeminiApiKey() {
 }
 
 // APIキーを保存
-function saveGeminiApiKey() {
+async function saveGeminiApiKey() {
     const input = document.getElementById('geminiApiKey');
     const key = input.value.trim();
 
@@ -1268,6 +1275,12 @@ function saveGeminiApiKey() {
 
     geminiApiKey = key;
     localStorage.setItem(GEMINI_API_KEY, key);
+
+    // ログイン中ならFirestoreにも保存（他デバイスと同期）
+    if (currentUser) {
+        await saveUserApiKey(key);
+    }
+
     updateApiStatus(true);
     alert('APIキーを保存しました。Gemini APIで高精度な読み取りが可能になりました！');
 }
@@ -1315,5 +1328,250 @@ function setupApiSettingsListeners() {
     // 初期状態でAPIキーがなければステータス表示
     if (!geminiApiKey) {
         updateApiStatus(false);
+    }
+}
+
+// ========== 認証関連 ==========
+
+// 認証状態を監視
+function setupAuth() {
+    const loginBtn = document.getElementById('googleLoginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    loginBtn.addEventListener('click', googleLogin);
+    logoutBtn.addEventListener('click', logout);
+
+    // 認証状態の変化を監視
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            await checkUserStatus(user);
+        } else {
+            currentUser = null;
+            isAdmin = false;
+            isApproved = false;
+            showLoginPrompt();
+        }
+    });
+}
+
+// Googleログイン
+async function googleLogin() {
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithPopup(provider);
+    } catch (error) {
+        console.error('ログインエラー:', error);
+        alert('ログインに失敗しました: ' + error.message);
+    }
+}
+
+// ログアウト
+async function logout() {
+    try {
+        await auth.signOut();
+    } catch (error) {
+        console.error('ログアウトエラー:', error);
+    }
+}
+
+// ユーザーの承認状態をチェック
+async function checkUserStatus(user) {
+    try {
+        // ユーザードキュメントを取得
+        const userDoc = await db.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+            // 最初のユーザーかチェック
+            const usersSnapshot = await db.collection('users').get();
+
+            if (usersSnapshot.empty) {
+                // 最初のユーザー = 管理者
+                await db.collection('users').doc(user.uid).set({
+                    email: user.email,
+                    name: user.displayName,
+                    photo: user.photoURL,
+                    isAdmin: true,
+                    isApproved: true,
+                    createdAt: new Date().toISOString()
+                });
+                isAdmin = true;
+                isApproved = true;
+            } else {
+                // 新規ユーザー = 承認待ち
+                await db.collection('users').doc(user.uid).set({
+                    email: user.email,
+                    name: user.displayName,
+                    photo: user.photoURL,
+                    isAdmin: false,
+                    isApproved: false,
+                    createdAt: new Date().toISOString()
+                });
+                isAdmin = false;
+                isApproved = false;
+            }
+        } else {
+            const userData = userDoc.data();
+            isAdmin = userData.isAdmin || false;
+            isApproved = userData.isApproved || false;
+        }
+
+        updateAuthUI(user);
+
+    } catch (error) {
+        console.error('ユーザー状態チェックエラー:', error);
+    }
+}
+
+// 認証UIを更新
+function updateAuthUI(user) {
+    const loginPrompt = document.getElementById('loginPrompt');
+    const userInfo = document.getElementById('userInfo');
+    const userPhoto = document.getElementById('userPhoto');
+    const userName = document.getElementById('userName');
+    const mainContent = document.querySelector('main');
+    const pendingApproval = document.getElementById('pendingApproval');
+    const adminPanel = document.getElementById('adminPanel');
+
+    loginPrompt.classList.add('hidden');
+    userInfo.classList.remove('hidden');
+
+    userPhoto.src = user.photoURL || '';
+    userName.textContent = user.displayName || user.email;
+
+    if (isApproved) {
+        // 承認済み - メインコンテンツを表示
+        mainContent.classList.remove('hidden');
+        pendingApproval.classList.add('hidden');
+
+        // 管理者の場合は承認パネルを表示
+        if (isAdmin) {
+            adminPanel.classList.remove('hidden');
+            loadPendingUsers();
+        } else {
+            adminPanel.classList.add('hidden');
+        }
+
+        // APIキーをFirestoreから読み込み
+        loadUserApiKey(user.uid);
+    } else {
+        // 承認待ち
+        mainContent.classList.add('hidden');
+        pendingApproval.classList.remove('hidden');
+        adminPanel.classList.add('hidden');
+
+        // 承認状態をリアルタイムで監視
+        watchApprovalStatus(user.uid);
+    }
+}
+
+// ログイン画面を表示
+function showLoginPrompt() {
+    const loginPrompt = document.getElementById('loginPrompt');
+    const userInfo = document.getElementById('userInfo');
+    const mainContent = document.querySelector('main');
+    const pendingApproval = document.getElementById('pendingApproval');
+    const adminPanel = document.getElementById('adminPanel');
+
+    loginPrompt.classList.remove('hidden');
+    userInfo.classList.add('hidden');
+    mainContent.classList.add('hidden');
+    pendingApproval.classList.add('hidden');
+    adminPanel.classList.add('hidden');
+}
+
+// 承認待ちユーザー一覧を読み込み
+function loadPendingUsers() {
+    const pendingUsersList = document.getElementById('pendingUsersList');
+
+    db.collection('users')
+        .where('isApproved', '==', false)
+        .onSnapshot((snapshot) => {
+            if (snapshot.empty) {
+                pendingUsersList.innerHTML = '<p class="no-pending">承認待ちのユーザーはいません</p>';
+                return;
+            }
+
+            pendingUsersList.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const userData = doc.data();
+                const userItem = document.createElement('div');
+                userItem.className = 'pending-user-item';
+                userItem.innerHTML = `
+                    <img src="${userData.photo || ''}" alt="${userData.name}" class="pending-user-photo">
+                    <div class="pending-user-info">
+                        <span class="pending-user-name">${userData.name}</span>
+                        <span class="pending-user-email">${userData.email}</span>
+                    </div>
+                    <button class="btn btn-primary btn-approve" data-uid="${doc.id}">許可</button>
+                `;
+                pendingUsersList.appendChild(userItem);
+            });
+
+            // 許可ボタンのイベント
+            pendingUsersList.querySelectorAll('.btn-approve').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const uid = btn.dataset.uid;
+                    await approveUser(uid);
+                });
+            });
+        });
+}
+
+// ユーザーを承認
+async function approveUser(uid) {
+    try {
+        await db.collection('users').doc(uid).update({
+            isApproved: true
+        });
+        alert('ユーザーを承認しました');
+    } catch (error) {
+        console.error('承認エラー:', error);
+        alert('承認に失敗しました: ' + error.message);
+    }
+}
+
+// 承認状態をリアルタイムで監視
+function watchApprovalStatus(uid) {
+    db.collection('users').doc(uid).onSnapshot((doc) => {
+        if (doc.exists) {
+            const userData = doc.data();
+            if (userData.isApproved) {
+                isApproved = true;
+                updateAuthUI(currentUser);
+            }
+        }
+    });
+}
+
+// ユーザーのAPIキーをFirestoreから読み込み
+async function loadUserApiKey(uid) {
+    try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            if (userData.geminiApiKey) {
+                geminiApiKey = userData.geminiApiKey;
+                document.getElementById('geminiApiKey').value = geminiApiKey;
+                updateApiStatus(true);
+                document.getElementById('apiSettingsContent').classList.add('collapsed');
+                document.getElementById('toggleApiSettings').textContent = '設定を表示';
+            }
+        }
+    } catch (error) {
+        console.error('APIキー読み込みエラー:', error);
+    }
+}
+
+// ユーザーのAPIキーをFirestoreに保存
+async function saveUserApiKey(apiKey) {
+    if (!currentUser) return;
+    try {
+        await db.collection('users').doc(currentUser.uid).update({
+            geminiApiKey: apiKey
+        });
+        console.log('APIキーをFirestoreに保存しました');
+    } catch (error) {
+        console.error('APIキー保存エラー:', error);
     }
 }

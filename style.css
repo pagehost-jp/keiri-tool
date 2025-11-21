@@ -682,3 +682,206 @@ h2 {
 .memo-suggestion .btn-suggestion:hover {
     background: #0d47a1;
 }
+
+/* 認証セクション */
+.header-top {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.auth-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.login-prompt {
+    display: flex;
+    align-items: center;
+}
+
+.btn-google {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.btn-google:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-google img {
+    width: 20px;
+    height: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 8px 15px;
+    border-radius: 25px;
+}
+
+.user-info.hidden {
+    display: none;
+}
+
+.user-photo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+#userName {
+    font-weight: 600;
+    color: white;
+}
+
+.btn-logout {
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* 承認待ち画面 */
+.pending-approval {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    margin: 30px;
+}
+
+.pending-approval.hidden {
+    display: none;
+}
+
+.pending-approval h2 {
+    color: #856404;
+    border: none;
+    margin-bottom: 15px;
+}
+
+.pending-approval p {
+    color: #856404;
+    margin: 10px 0;
+}
+
+/* 管理者パネル */
+.admin-panel {
+    background: #e8f5e9;
+    border: 2px solid #4caf50;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 0 30px 20px;
+}
+
+.admin-panel.hidden {
+    display: none;
+}
+
+.admin-panel h3 {
+    color: #2e7d32;
+    margin-bottom: 15px;
+}
+
+.pending-user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.pending-user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pending-user-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.pending-user-name {
+    font-weight: 600;
+}
+
+.pending-user-email {
+    font-size: 0.85em;
+    color: #666;
+}
+
+.btn-approve {
+    padding: 8px 20px;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.btn-approve:hover {
+    background: #45a049;
+}
+
+.no-pending {
+    color: #666;
+    text-align: center;
+    padding: 15px;
+    font-style: italic;
+}
+
+/* レスポンシブ対応（認証部分） */
+@media (max-width: 768px) {
+    .header-top {
+        justify-content: center;
+    }
+
+    .user-info {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    #userName {
+        font-size: 0.9em;
+    }
+
+    .pending-user-item {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+}
