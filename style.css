@@ -875,6 +875,7 @@ h2 {
 /* 管理者パネル */
 /* 管理者トグルボタン（歯車） */
 .btn-admin-toggle {
+    position: relative;
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
@@ -896,6 +897,33 @@ h2 {
 
 .btn-admin-toggle.hidden {
     display: none;
+}
+
+/* 承認待ちバッジ */
+.pending-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e53935;
+    color: white;
+    font-size: 0.7em;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+.pending-badge.hidden {
+    display: none;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
 /* 管理者パネル オーバーレイ */

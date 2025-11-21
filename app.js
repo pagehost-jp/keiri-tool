@@ -1878,9 +1878,32 @@ function loadPendingUsers() {
         deleteAllBtn.onclick = deleteAllData;
     }
 
+    // 前回の承認待ち人数を追跡
+    let previousPendingCount = 0;
+    const pendingBadge = document.getElementById('pendingBadge');
+
     db.collection('users')
         .where('isApproved', '==', false)
         .onSnapshot((snapshot) => {
+            const currentCount = snapshot.size;
+
+            // バッジを更新
+            if (currentCount > 0) {
+                pendingBadge.textContent = currentCount;
+                pendingBadge.classList.remove('hidden');
+            } else {
+                pendingBadge.classList.add('hidden');
+            }
+
+            // 新しい承認待ちユーザーが来たらポップアップ
+            if (currentCount > previousPendingCount && previousPendingCount >= 0) {
+                const newUsers = currentCount - previousPendingCount;
+                if (newUsers > 0 && previousPendingCount > 0) {
+                    alert(`新しい承認待ちユーザーが${newUsers}人います`);
+                }
+            }
+            previousPendingCount = currentCount;
+
             if (snapshot.empty) {
                 pendingUsersList.innerHTML = '<p class="no-pending">承認待ちのユーザーはいません</p>';
                 return;
