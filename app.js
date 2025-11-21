@@ -286,7 +286,7 @@ async function handleFile(file) {
         } catch (error) {
             console.error('HEIC変換エラー:', error);
             document.getElementById('loadingIndicator').classList.add('hidden');
-            alert('iPhone画像の変換に失敗しました。\n\nエラー: ' + error.message + '\n\nスクリーンショットで撮り直すか、写真アプリで「JPEG」形式でエクスポートしてください。');
+            alert('iPhone画像（HEIC形式）の変換に失敗しました。\n\n【解決方法】\n① Safari ブラウザで開く（HEICに対応）\n② または Mac のプレビューで JPEG に変換\n③ または iPhone設定 → カメラ → フォーマット → 互換性優先');
             return;
         }
     }
