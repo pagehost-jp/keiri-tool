@@ -1636,6 +1636,41 @@ function setupApiSettingsListeners() {
         toggleBtn.textContent = content.classList.contains('collapsed') ? '設定を表示' : '設定を隠す';
     });
 
+    // 管理パネル内のAPI設定ボタン
+    const adminSaveBtn = document.getElementById('adminSaveApiKey');
+    const adminClearBtn = document.getElementById('adminClearApiKey');
+    const adminApiInput = document.getElementById('adminGeminiApiKey');
+
+    adminSaveBtn.addEventListener('click', async () => {
+        const apiKey = adminApiInput.value.trim();
+        if (!apiKey) {
+            alert('APIキーを入力してください');
+            return;
+        }
+        geminiApiKey = apiKey;
+        await saveUserApiKey(apiKey);
+        updateApiStatus(true);
+        // メインセクションを非表示にして管理パネルで管理
+        document.getElementById('apiSettingsSection').classList.add('hidden');
+        document.getElementById('adminApiStatus').innerHTML = '<span class="api-status-text">Gemini API: 設定済み</span>';
+        document.getElementById('adminApiStatus').className = 'admin-api-status has-key';
+        adminApiInput.value = '';
+        alert('APIキーを保存しました');
+    });
+
+    adminClearBtn.addEventListener('click', async () => {
+        if (!confirm('APIキーを削除しますか？')) return;
+        geminiApiKey = null;
+        await clearUserApiKey();
+        updateApiStatus(false);
+        // メインセクションを再表示
+        document.getElementById('apiSettingsSection').classList.remove('hidden');
+        document.getElementById('adminApiStatus').innerHTML = '<span class="api-status-text">Gemini API: 未設定</span>';
+        document.getElementById('adminApiStatus').className = 'admin-api-status no-key';
+        document.getElementById('geminiApiKey').value = '';
+        alert('APIキーを削除しました');
+    });
+
     // 初期状態でAPIキーがなければステータス表示
     if (!geminiApiKey) {
         updateApiStatus(false);
@@ -2062,15 +2097,30 @@ function watchApprovalStatus(uid) {
 async function loadUserApiKey(uid) {
     try {
         const userDoc = await db.collection('users').doc(uid).get();
+        const adminApiStatus = document.getElementById('adminApiStatus');
+        const apiSettingsSection = document.getElementById('apiSettingsSection');
+
         if (userDoc.exists) {
             const userData = userDoc.data();
             if (userData.geminiApiKey) {
                 geminiApiKey = userData.geminiApiKey;
                 document.getElementById('geminiApiKey').value = geminiApiKey;
                 updateApiStatus(true);
-                document.getElementById('apiSettingsContent').classList.add('collapsed');
-                document.getElementById('toggleApiSettings').textContent = '設定を表示';
+
+                // APIキーがある場合：メインセクションを非表示、管理パネルで管理
+                apiSettingsSection.classList.add('hidden');
+                adminApiStatus.innerHTML = '<span class="api-status-text">Gemini API: 設定済み</span>';
+                adminApiStatus.className = 'admin-api-status has-key';
+            } else {
+                // APIキーがない場合：メインセクションを表示
+                apiSettingsSection.classList.remove('hidden');
+                adminApiStatus.innerHTML = '<span class="api-status-text">Gemini API: 未設定</span>';
+                adminApiStatus.className = 'admin-api-status no-key';
             }
+        } else {
+            apiSettingsSection.classList.remove('hidden');
+            adminApiStatus.innerHTML = '<span class="api-status-text">Gemini API: 未設定</span>';
+            adminApiStatus.className = 'admin-api-status no-key';
         }
     } catch (error) {
         console.error('APIキー読み込みエラー:', error);
@@ -2087,5 +2137,18 @@ async function saveUserApiKey(apiKey) {
         console.log('APIキーをFirestoreに保存しました');
     } catch (error) {
         console.error('APIキー保存エラー:', error);
+    }
+}
+
+// ユーザーのAPIキーをFirestoreから削除
+async function clearUserApiKey() {
+    if (!currentUser) return;
+    try {
+        await db.collection('users').doc(currentUser.uid).update({
+            geminiApiKey: firebase.firestore.FieldValue.delete()
+        });
+        console.log('APIキーをFirestoreから削除しました');
+    } catch (error) {
+        console.error('APIキー削除エラー:', error);
     }
 }

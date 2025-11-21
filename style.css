@@ -1014,6 +1014,45 @@ h2 {
     flex-wrap: wrap;
 }
 
+/* 管理者パネル内API設定 */
+.admin-api-status {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.admin-api-status.has-key {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.admin-api-status.no-key {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.admin-api-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.admin-api-input input {
+    flex: 1;
+    min-width: 150px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85em;
+}
+
 /* 管理者用危険操作セクション */
 .admin-danger-section {
     margin: 0;
