@@ -47,16 +47,14 @@ let unsubscribeFirestore = null;
 // DOMロード時の初期化
 document.addEventListener('DOMContentLoaded', () => {
     setupAuth();  // 認証を最初にセットアップ
+    setupFilterListeners();  // フィルター設定を先に（年度の初期化のため）
     loadTransactions();
     loadPaymentDetailOptions();
     loadGeminiApiKey();
-    updateYearOptions();
-    updateMonthOptions();
     updateTypeOptions();
     renderTransactionList();
     setupEventListeners();
     setupFormValidation();
-    setupFilterListeners();
     setupApiSettingsListeners();
     setupMemoSuggestion();
 });
@@ -196,45 +194,118 @@ function setupEventListeners() {
 
 // フィルターのイベントリスナー設定
 function setupFilterListeners() {
-    const filterYear = document.getElementById('filterYear');
-    const filterMonth = document.getElementById('filterMonth');
     const filterType = document.getElementById('filterType');
     const searchKeyword = document.getElementById('searchKeyword');
-    const clearFilterBtn = document.getElementById('clearFilterBtn');
+    const prevYearBtn = document.getElementById('prevYearBtn');
+    const nextYearBtn = document.getElementById('nextYearBtn');
+    const monthTabs = document.getElementById('monthTabs');
 
-    filterYear.addEventListener('change', () => {
-        currentFilters.year = filterYear.value;
-        // 年が変わったら月の選択肢を更新（その年のデータがある月のみ表示）
-        updateMonthOptions();
-        currentFilters.month = '';  // 月のフィルターをリセット
-        filterMonth.value = '';
+    // 年度ナビゲーション
+    prevYearBtn.addEventListener('click', () => {
+        currentFilters.year = String(parseInt(currentFilters.year) - 1);
+        updateYearDisplay();
+        updateMonthTabs();
         renderTransactionList();
     });
 
-    filterMonth.addEventListener('change', () => {
-        currentFilters.month = filterMonth.value;
+    nextYearBtn.addEventListener('click', () => {
+        currentFilters.year = String(parseInt(currentFilters.year) + 1);
+        updateYearDisplay();
+        updateMonthTabs();
         renderTransactionList();
     });
 
+    // 月タブのクリック
+    monthTabs.addEventListener('click', (e) => {
+        const tab = e.target.closest('.month-tab');
+        if (!tab || tab.classList.contains('disabled')) return;
+
+        // アクティブ状態を更新
+        monthTabs.querySelectorAll('.month-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const month = tab.dataset.month;
+        currentFilters.month = month === 'all' ? '' : month;
+        renderTransactionList();
+    });
+
+    // 種別フィルター
     filterType.addEventListener('change', () => {
         currentFilters.type = filterType.value;
         renderTransactionList();
     });
 
+    // キーワード検索
     searchKeyword.addEventListener('input', () => {
         currentFilters.keyword = searchKeyword.value;
         renderTransactionList();
     });
 
-    clearFilterBtn.addEventListener('click', () => {
-        filterYear.value = '';
-        filterMonth.value = '';
-        filterType.value = '';
-        searchKeyword.value = '';
-        currentFilters = { year: '', month: '', type: '', keyword: '' };
-        updateMonthOptions();  // 全データの月を表示
-        updateTypeOptions();   // 全データの種別を表示
-        renderTransactionList();
+    // 初期年度を設定（現在の年）
+    currentFilters.year = String(new Date().getFullYear());
+    updateYearDisplay();
+}
+
+// 年度表示を更新
+function updateYearDisplay() {
+    document.getElementById('currentYearDisplay').textContent = `${currentFilters.year}年度`;
+}
+
+// 月タブを更新（データがある月をハイライト）
+function updateMonthTabs() {
+    const monthTabs = document.getElementById('monthTabs');
+    const tabs = monthTabs.querySelectorAll('.month-tab');
+
+    // 各月のデータ件数をカウント
+    const monthCounts = {};
+    transactions.forEach(t => {
+        const year = t.date.substring(0, 4);
+        const month = t.date.substring(5, 7);
+
+        // 12月は前年度として扱う
+        let fiscalYear = year;
+        if (month === '12') {
+            fiscalYear = String(parseInt(year) + 1);
+        }
+
+        if (fiscalYear === currentFilters.year) {
+            monthCounts[month] = (monthCounts[month] || 0) + 1;
+        }
+    });
+
+    // 全件数
+    let totalCount = Object.values(monthCounts).reduce((a, b) => a + b, 0);
+
+    tabs.forEach(tab => {
+        const month = tab.dataset.month;
+
+        // 既存のバッジを削除
+        const existingBadge = tab.querySelector('.count-badge');
+        if (existingBadge) existingBadge.remove();
+
+        if (month === 'all') {
+            // 全てタブ
+            if (totalCount > 0) {
+                tab.classList.remove('disabled');
+                const badge = document.createElement('span');
+                badge.className = 'count-badge';
+                badge.textContent = totalCount;
+                tab.appendChild(badge);
+            } else {
+                tab.classList.add('disabled');
+            }
+        } else {
+            const count = monthCounts[month] || 0;
+            if (count > 0) {
+                tab.classList.remove('disabled');
+                const badge = document.createElement('span');
+                badge.className = 'count-badge';
+                badge.textContent = count;
+                tab.appendChild(badge);
+            } else {
+                tab.classList.add('disabled');
+            }
+        }
     });
 }
 
@@ -774,15 +845,23 @@ function renderTransactionList() {
 
     // フィルター適用
     let filteredTransactions = transactions.filter(transaction => {
-        // 年でフィルター
-        if (currentFilters.year && !transaction.date.startsWith(currentFilters.year)) {
-            return false;
+        const year = transaction.date.substring(0, 4);
+        const month = transaction.date.substring(5, 7);
+
+        // 年度でフィルター（12月は翌年度として扱う）
+        if (currentFilters.year) {
+            let fiscalYear = year;
+            if (month === '12') {
+                fiscalYear = String(parseInt(year) + 1);
+            }
+            if (fiscalYear !== currentFilters.year) {
+                return false;
+            }
         }
 
         // 月でフィルター
         if (currentFilters.month) {
-            const transactionMonth = transaction.date.substring(5, 7);
-            if (transactionMonth !== currentFilters.month) {
+            if (month !== currentFilters.month) {
                 return false;
             }
         }
@@ -804,6 +883,9 @@ function renderTransactionList() {
 
         return true;
     });
+
+    // 日付順にソート（新しい順）
+    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // フィルターサマリー表示
     if (currentFilters.year || currentFilters.month || currentFilters.type || currentFilters.keyword) {
@@ -1133,8 +1215,7 @@ function loadTransactions() {
             // ローカルにもバックアップ（Firestoreのデータで上書き）
             localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
 
-            updateYearOptions();
-            updateMonthOptions();
+            updateMonthTabs();
             updateTypeOptions();
             renderTransactionList();
             console.log('Firestoreから同期しました:', transactions.length, '件');

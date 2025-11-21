@@ -176,35 +176,45 @@
                     </div>
                 </div>
 
-                <!-- フィルター機能 -->
-                <div class="filter-section">
-                    <div class="filter-controls">
-                        <div class="filter-group">
-                            <label for="filterYear">年:</label>
-                            <select id="filterYear">
-                                <option value="">全て</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="filterMonth">月:</label>
-                            <select id="filterMonth">
-                                <option value="">全て</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="filterType">種別:</label>
-                            <select id="filterType">
-                                <option value="">全て</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="searchKeyword">検索:</label>
-                            <input type="text" id="searchKeyword" placeholder="用途やメモで検索">
-                        </div>
-                        <button id="clearFilterBtn" class="btn btn-primary">全データ表示</button>
-                    </div>
-                    <div class="filter-summary" id="filterSummary"></div>
+                <!-- 年度選択 -->
+                <div class="year-selector">
+                    <button id="prevYearBtn" class="year-nav-btn">&lt;</button>
+                    <span id="currentYearDisplay" class="current-year">2025年度</span>
+                    <button id="nextYearBtn" class="year-nav-btn">&gt;</button>
                 </div>
+
+                <!-- 月別タブ -->
+                <div class="month-tabs" id="monthTabs">
+                    <!-- 12月始まり（会計年度対応） -->
+                    <button class="month-tab" data-month="12">12月</button>
+                    <button class="month-tab" data-month="01">1月</button>
+                    <button class="month-tab" data-month="02">2月</button>
+                    <button class="month-tab" data-month="03">3月</button>
+                    <button class="month-tab" data-month="04">4月</button>
+                    <button class="month-tab" data-month="05">5月</button>
+                    <button class="month-tab" data-month="06">6月</button>
+                    <button class="month-tab" data-month="07">7月</button>
+                    <button class="month-tab" data-month="08">8月</button>
+                    <button class="month-tab" data-month="09">9月</button>
+                    <button class="month-tab" data-month="10">10月</button>
+                    <button class="month-tab" data-month="11">11月</button>
+                    <button class="month-tab active" data-month="all">全て</button>
+                </div>
+
+                <!-- サブフィルター -->
+                <div class="sub-filter">
+                    <div class="filter-group">
+                        <label for="filterType">種別:</label>
+                        <select id="filterType">
+                            <option value="">全て</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <input type="text" id="searchKeyword" placeholder="用途やメモで検索">
+                    </div>
+                </div>
+
+                <div class="filter-summary" id="filterSummary"></div>
 
                 <div id="transactionList" class="transaction-list">
                     <p class="empty-message">まだ記録がありません</p>
