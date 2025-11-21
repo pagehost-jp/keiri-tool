@@ -9,6 +9,8 @@
 - 場所: `~/Desktop/keiri-tool`
 - 作成日: 2025-11-21
 - 技術: HTML/CSS/JavaScript, Tesseract.js (OCR), SheetJS (Excel)
+- **公開URL**: https://pagehost-jp.github.io/keiri-tool/
+- **GitHub**: https://github.com/pagehost-jp/keiri-tool
 
 ---
 
