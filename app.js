@@ -1485,7 +1485,19 @@ function setupAuth() {
 async function googleLogin() {
     try {
         const provider = new firebase.auth.GoogleAuthProvider();
-        await auth.signInWithPopup(provider);
+        // まずポップアップを試す、ダメならリダイレクト
+        try {
+            await auth.signInWithPopup(provider);
+        } catch (popupError) {
+            // ポップアップが使えない環境（アプリ内ブラウザなど）はリダイレクト
+            if (popupError.code === 'auth/operation-not-supported-in-this-environment' ||
+                popupError.code === 'auth/popup-blocked') {
+                console.log('ポップアップが使えないため、リダイレクト方式に切り替え');
+                await auth.signInWithRedirect(provider);
+            } else {
+                throw popupError;
+            }
+        }
     } catch (error) {
         console.error('ログインエラー:', error);
         const errorMessage = getJapaneseErrorMessage(error.code);
@@ -1498,11 +1510,12 @@ function getJapaneseErrorMessage(errorCode) {
     const errorMessages = {
         'auth/unauthorized-domain': 'このドメインは許可されていません。\n管理者にFirebase設定を確認してもらってください。',
         'auth/popup-closed-by-user': 'ログイン画面が閉じられました。\nもう一度お試しください。',
-        'auth/popup-blocked': 'ポップアップがブロックされました。\nブラウザの設定を確認してください。',
+        'auth/popup-blocked': 'ポップアップがブロックされました。\nリダイレクト方式で再試行します。',
         'auth/cancelled-popup-request': 'ログインがキャンセルされました。',
         'auth/network-request-failed': 'ネットワークエラーです。\nインターネット接続を確認してください。',
         'auth/user-disabled': 'このアカウントは無効化されています。',
         'auth/operation-not-allowed': 'Googleログインが有効になっていません。',
+        'auth/operation-not-supported-in-this-environment': 'このブラウザではポップアップログインが使えません。\nリダイレクト方式で再試行します。',
         'auth/internal-error': '内部エラーが発生しました。しばらく待ってからお試しください。'
     };
     return errorMessages[errorCode] || `エラーが発生しました (${errorCode})`;
