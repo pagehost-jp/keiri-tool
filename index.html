@@ -94,13 +94,13 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="paymentDetail">カード詳細（任意）</label>
+                        <label for="paymentDetail">口座・カード（任意）</label>
                         <select id="paymentDetail">
                             <option value="">選択してください</option>
                             <option value="__new__">＋ 新規追加...</option>
                             <!-- 選択肢はJSで動的に追加 -->
                         </select>
-                        <input type="text" id="paymentDetailNew" class="hidden" placeholder="新しいカード詳細を入力">
+                        <input type="text" id="paymentDetailNew" class="hidden" placeholder="新しい口座・カードを入力">
                         <small class="hint">よく使うものが上に表示されます</small>
                     </div>
 
@@ -114,6 +114,10 @@
 
                     <div class="form-group">
                         <label for="notes">メモ（任意）</label>
+                        <div id="memoSuggestion" class="memo-suggestion hidden">
+                            <span class="suggestion-label">前回のメモ：</span>
+                            <button type="button" class="btn-suggestion" id="usePreviousMemo"></button>
+                        </div>
                         <textarea id="notes" rows="3" placeholder="追加情報があればここに"></textarea>
                     </div>
 

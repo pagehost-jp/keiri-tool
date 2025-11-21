@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFormValidation();
     setupFilterListeners();
     setupApiSettingsListeners();
+    setupMemoSuggestion();
 });
 
 // フォームバリデーションの設定（日本語メッセージ）
@@ -947,6 +948,53 @@ function setupPaymentDetailListeners() {
             newInput.value = '';
         }
     });
+}
+
+// 用途に基づいてメモ候補を表示
+function setupMemoSuggestion() {
+    const purposeInput = document.getElementById('purpose');
+    const memoSuggestion = document.getElementById('memoSuggestion');
+    const usePreviousMemoBtn = document.getElementById('usePreviousMemo');
+    const notesTextarea = document.getElementById('notes');
+
+    // 用途が変更されたらメモ候補を検索
+    purposeInput.addEventListener('change', () => {
+        showMemoSuggestion(purposeInput.value);
+    });
+
+    purposeInput.addEventListener('blur', () => {
+        showMemoSuggestion(purposeInput.value);
+    });
+
+    // 候補をクリックしたらメモに反映
+    usePreviousMemoBtn.addEventListener('click', () => {
+        notesTextarea.value = usePreviousMemoBtn.textContent;
+        memoSuggestion.classList.add('hidden');
+    });
+}
+
+// メモ候補を表示
+function showMemoSuggestion(purpose) {
+    const memoSuggestion = document.getElementById('memoSuggestion');
+    const usePreviousMemoBtn = document.getElementById('usePreviousMemo');
+    const notesTextarea = document.getElementById('notes');
+
+    if (!purpose || notesTextarea.value) {
+        memoSuggestion.classList.add('hidden');
+        return;
+    }
+
+    // 同じ用途の過去の取引でメモがあるものを検索
+    const previousMemo = transactions.find(t =>
+        t.purpose === purpose && t.notes && t.notes.trim()
+    );
+
+    if (previousMemo) {
+        usePreviousMemoBtn.textContent = previousMemo.notes;
+        memoSuggestion.classList.remove('hidden');
+    } else {
+        memoSuggestion.classList.add('hidden');
+    }
 }
 
 // 支払い詳細の値を取得
