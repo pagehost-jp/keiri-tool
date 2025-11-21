@@ -28,7 +28,8 @@ const STORAGE_KEY = 'keiri_transactions';
 const PAYMENT_DETAILS_KEY = 'keiri_payment_details';
 const GEMINI_API_KEY = 'keiri_gemini_api_key';
 
-// カスタム支払い詳細の選択肢
+// カスタム支払い詳細の選択肢（使用回数付き）
+// 形式: { name: "楽天カード", count: 5 }
 let paymentDetailOptions = [];
 
 // Gemini APIキー
@@ -637,7 +638,7 @@ function setTodayDate() {
 async function handleFormSubmit(event) {
     event.preventDefault();
 
-    const paymentDetail = document.getElementById('paymentDetail').value.trim();
+    const paymentDetail = getPaymentDetailValue();
 
     const transaction = {
         id: Date.now(),
@@ -679,6 +680,10 @@ function resetForm() {
     document.getElementById('previewArea').innerHTML = '';
     currentImageData = null;
     currentImageUrl = null;
+
+    // 新規入力欄を非表示に
+    document.getElementById('paymentDetailNew').classList.add('hidden');
+    document.getElementById('paymentDetailNew').value = '';
 
     // 色のリセット
     const formGroups = document.querySelectorAll('.form-group');
@@ -893,9 +898,17 @@ function loadTransactions() {
 function loadPaymentDetailOptions() {
     const saved = localStorage.getItem(PAYMENT_DETAILS_KEY);
     if (saved) {
-        paymentDetailOptions = JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // 旧形式（文字列配列）からの移行対応
+        if (parsed.length > 0 && typeof parsed[0] === 'string') {
+            paymentDetailOptions = parsed.map(name => ({ name, count: 1 }));
+            savePaymentDetailOptions();
+        } else {
+            paymentDetailOptions = parsed;
+        }
     }
-    updatePaymentDetailDatalist();
+    updatePaymentDetailSelect();
+    setupPaymentDetailListeners();
 }
 
 // カスタム支払い詳細の選択肢を保存
@@ -903,25 +916,63 @@ function savePaymentDetailOptions() {
     localStorage.setItem(PAYMENT_DETAILS_KEY, JSON.stringify(paymentDetailOptions));
 }
 
-// datalistを更新
-function updatePaymentDetailDatalist() {
-    const datalist = document.getElementById('paymentDetailList');
-    datalist.innerHTML = '';
-    paymentDetailOptions.forEach(option => {
+// selectを更新（使用回数順）
+function updatePaymentDetailSelect() {
+    const select = document.getElementById('paymentDetail');
+    // 固定オプション以外をクリア
+    select.innerHTML = '<option value="">選択してください</option><option value="__new__">＋ 新規追加...</option>';
+
+    // 使用回数でソート（多い順）
+    const sorted = [...paymentDetailOptions].sort((a, b) => b.count - a.count);
+
+    sorted.forEach(option => {
         const optionEl = document.createElement('option');
-        optionEl.value = option;
-        datalist.appendChild(optionEl);
+        optionEl.value = option.name;
+        optionEl.textContent = `${option.name}（${option.count}回）`;
+        select.appendChild(optionEl);
     });
 }
 
-// 新しい支払い詳細を追加（重複チェック付き）
-function addPaymentDetailOption(detail) {
-    if (detail && !paymentDetailOptions.includes(detail)) {
-        paymentDetailOptions.push(detail);
-        paymentDetailOptions.sort(); // アルファベット順にソート
-        savePaymentDetailOptions();
-        updatePaymentDetailDatalist();
+// 支払い詳細セレクトのイベントリスナー
+function setupPaymentDetailListeners() {
+    const select = document.getElementById('paymentDetail');
+    const newInput = document.getElementById('paymentDetailNew');
+
+    select.addEventListener('change', () => {
+        if (select.value === '__new__') {
+            newInput.classList.remove('hidden');
+            newInput.focus();
+        } else {
+            newInput.classList.add('hidden');
+            newInput.value = '';
+        }
+    });
+}
+
+// 支払い詳細の値を取得
+function getPaymentDetailValue() {
+    const select = document.getElementById('paymentDetail');
+    const newInput = document.getElementById('paymentDetailNew');
+
+    if (select.value === '__new__') {
+        return newInput.value.trim();
     }
+    return select.value;
+}
+
+// 新しい支払い詳細を追加または使用回数を更新
+function addPaymentDetailOption(detail) {
+    if (!detail) return;
+
+    const existing = paymentDetailOptions.find(opt => opt.name === detail);
+    if (existing) {
+        existing.count++;
+    } else {
+        paymentDetailOptions.push({ name: detail, count: 1 });
+    }
+
+    savePaymentDetailOptions();
+    updatePaymentDetailSelect();
 }
 
 // Excelエクスポート
