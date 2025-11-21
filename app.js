@@ -248,9 +248,38 @@ function handleFileSelect(event) {
 
 // ファイル処理
 async function handleFile(file) {
-    if (!file.type.startsWith('image/')) {
+    // HEIC形式かどうかチェック（iPhone写真形式）
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+                   file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+
+    if (!file.type.startsWith('image/') && !isHeic) {
         alert('画像ファイルを選択してください');
         return;
+    }
+
+    // HEIC形式の場合はJPEGに変換
+    let processedFile = file;
+    if (isHeic) {
+        try {
+            console.log('HEIC形式を変換中...');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.classList.remove('hidden');
+            loadingIndicator.querySelector('p').textContent = 'iPhone画像を変換中...';
+
+            const blob = await heic2any({
+                blob: file,
+                toType: 'image/jpeg',
+                quality: 0.9
+            });
+            processedFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+            console.log('HEIC→JPEG変換完了');
+
+            loadingIndicator.querySelector('p').textContent = '領収書を読み取り中...';
+        } catch (error) {
+            console.error('HEIC変換エラー:', error);
+            alert('iPhone画像の変換に失敗しました。スクリーンショットで撮り直すか、JPEG形式で保存してください。');
+            return;
+        }
     }
 
     // 画像プレビュー表示
@@ -269,7 +298,7 @@ async function handleFile(file) {
         currentImageUrl = await compressImage(originalImageUrl);
         console.log('画像圧縮完了:', Math.round(originalImageUrl.length / 1024) + 'KB →', Math.round(currentImageUrl.length / 1024) + 'KB');
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(processedFile);
 }
 
 // 画像を圧縮（OCR後に実行、保存用）
