@@ -1652,6 +1652,26 @@ function setupAuth() {
     loginBtn.addEventListener('click', googleLogin);
     logoutBtn.addEventListener('click', logout);
 
+    // 管理者パネルの開閉
+    const adminToggleBtn = document.getElementById('adminToggleBtn');
+    const closeAdminPanel = document.getElementById('closeAdminPanel');
+    const adminPanel = document.getElementById('adminPanel');
+    const adminOverlay = document.getElementById('adminOverlay');
+
+    function openAdminPanel() {
+        adminPanel.classList.remove('hidden');
+        adminOverlay.classList.remove('hidden');
+    }
+
+    function closeAdminPanelFn() {
+        adminPanel.classList.add('hidden');
+        adminOverlay.classList.add('hidden');
+    }
+
+    adminToggleBtn.addEventListener('click', openAdminPanel);
+    closeAdminPanel.addEventListener('click', closeAdminPanelFn);
+    adminOverlay.addEventListener('click', closeAdminPanelFn);
+
     // 認証状態の変化を監視
     auth.onAuthStateChanged(async (user) => {
         if (user) {
@@ -1797,22 +1817,19 @@ function updateAuthUI(user) {
         mainContent.classList.remove('hidden');
         pendingApproval.classList.add('hidden');
 
-        // 管理者の場合は承認パネルを表示
+        // 管理者の場合は歯車ボタンを表示（パネルは非表示のまま）
         if (isAdmin) {
-            adminPanel.classList.remove('hidden');
+            document.getElementById('adminToggleBtn').classList.remove('hidden');
             loadPendingUsers();
             // 管理者は全機能使用可能
             document.querySelector('.upload-section').classList.remove('hidden');
             document.getElementById('apiSettingsSection').classList.remove('hidden');
-            document.getElementById('backupBtn').classList.remove('hidden');
-            document.getElementById('restoreBtn').classList.remove('hidden');
         } else {
+            document.getElementById('adminToggleBtn').classList.add('hidden');
             adminPanel.classList.add('hidden');
-            // 経理は閲覧・エクスポートのみ（追加・API設定・バックアップは非表示）
+            // 経理は閲覧・エクスポートのみ（追加・API設定は非表示）
             document.querySelector('.upload-section').classList.add('hidden');
             document.getElementById('apiSettingsSection').classList.add('hidden');
-            document.getElementById('backupBtn').classList.add('hidden');
-            document.getElementById('restoreBtn').classList.add('hidden');
         }
 
         // APIキーをFirestoreから読み込み

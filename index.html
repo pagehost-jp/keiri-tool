@@ -21,6 +21,7 @@
                         <img id="userPhoto" src="" alt="User" class="user-photo">
                         <span id="userName"></span>
                         <span id="userRole" class="user-role"></span>
+                        <button id="adminToggleBtn" class="btn-admin-toggle hidden" title="管理者ツール">⚙</button>
                         <button id="logoutBtn" class="btn-logout">ログアウト</button>
                     </div>
                 </div>
@@ -36,14 +37,35 @@
             <p>承認されると自動的にアクセスできるようになります。</p>
         </div>
 
-        <!-- 管理者用：承認リクエスト -->
+        <!-- 管理者パネルのオーバーレイ -->
+        <div id="adminOverlay" class="admin-overlay hidden"></div>
+
+        <!-- 管理者用パネル（モーダル風） -->
         <div id="adminPanel" class="admin-panel hidden">
-            <h3>承認待ちユーザー</h3>
-            <div id="pendingUsersList"></div>
+            <div class="admin-panel-header">
+                <h3>管理者ツール</h3>
+                <button id="closeAdminPanel" class="btn-close-admin">&times;</button>
+            </div>
+
+            <!-- 承認待ちユーザー -->
+            <div class="admin-section">
+                <h4>承認待ちユーザー</h4>
+                <div id="pendingUsersList"></div>
+            </div>
+
+            <!-- データ管理 -->
+            <div class="admin-section">
+                <h4>データ管理</h4>
+                <div class="admin-buttons">
+                    <button id="backupBtn" class="btn btn-secondary">バックアップ</button>
+                    <button id="restoreBtn" class="btn btn-secondary">復元</button>
+                    <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+                </div>
+            </div>
 
             <!-- 危険な操作は折りたたみ -->
             <details class="admin-danger-section">
-                <summary class="admin-danger-toggle">管理者用：危険な操作</summary>
+                <summary class="admin-danger-toggle">危険な操作（取り消し不可）</summary>
                 <div class="admin-danger-content">
                     <p class="danger-warning">以下の操作は取り消せません。慎重に実行してください。</p>
                     <div class="danger-buttons">
@@ -178,9 +200,6 @@
                     <h2>記録一覧</h2>
                     <div class="header-controls">
                         <button id="exportBtn" class="btn btn-success">Excelエクスポート</button>
-                        <button id="backupBtn" class="btn btn-secondary">バックアップ</button>
-                        <button id="restoreBtn" class="btn btn-secondary">復元</button>
-                        <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
                     </div>
                 </div>
 

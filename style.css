@@ -873,29 +873,121 @@ h2 {
 }
 
 /* 管理者パネル */
+/* 管理者トグルボタン（歯車） */
+.btn-admin-toggle {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.4em;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-admin-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(45deg);
+}
+
+.btn-admin-toggle.hidden {
+    display: none;
+}
+
+/* 管理者パネル オーバーレイ */
+.admin-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.admin-overlay.hidden {
+    display: none;
+}
+
+/* 管理者パネル */
 .admin-panel {
-    background: #e8f5e9;
-    border: 2px solid #4caf50;
-    border-radius: 15px;
-    padding: 20px;
-    margin: 0 30px 20px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
 }
 
 .admin-panel.hidden {
     display: none;
 }
 
-.admin-panel h3 {
-    color: #2e7d32;
+.admin-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px 16px 0 0;
+}
+
+.admin-panel-header h3 {
+    color: white;
+    margin: 0;
+    font-size: 1.3em;
+}
+
+.btn-close-admin {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.5em;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.btn-close-admin:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.admin-section {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.admin-section h4 {
+    color: #333;
     margin-bottom: 15px;
+    font-size: 1em;
+}
+
+.admin-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 /* 管理者用危険操作セクション */
 .admin-danger-section {
-    margin-top: 20px;
-    border: 1px dashed #ccc;
-    border-radius: 8px;
-    padding: 10px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    padding: 15px 20px;
     background: #fafafa;
 }
 
