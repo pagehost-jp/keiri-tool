@@ -261,23 +261,32 @@ async function handleFile(file) {
     let processedFile = file;
     if (isHeic) {
         try {
-            console.log('HEIC形式を変換中...');
+            console.log('HEIC形式を変換中...', file.name, file.type);
             const loadingIndicator = document.getElementById('loadingIndicator');
             loadingIndicator.classList.remove('hidden');
             loadingIndicator.querySelector('p').textContent = 'iPhone画像を変換中...';
 
-            const blob = await heic2any({
+            // heic2anyがロードされているか確認
+            if (typeof heic2any === 'undefined') {
+                throw new Error('HEIC変換ライブラリが読み込まれていません');
+            }
+
+            const result = await heic2any({
                 blob: file,
                 toType: 'image/jpeg',
                 quality: 0.9
             });
-            processedFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
-            console.log('HEIC→JPEG変換完了');
+
+            // 結果が配列の場合は最初の要素を使用
+            const blob = Array.isArray(result) ? result[0] : result;
+            processedFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+            console.log('HEIC→JPEG変換完了', processedFile.size, 'bytes');
 
             loadingIndicator.querySelector('p').textContent = '領収書を読み取り中...';
         } catch (error) {
             console.error('HEIC変換エラー:', error);
-            alert('iPhone画像の変換に失敗しました。スクリーンショットで撮り直すか、JPEG形式で保存してください。');
+            document.getElementById('loadingIndicator').classList.add('hidden');
+            alert('iPhone画像の変換に失敗しました。\n\nエラー: ' + error.message + '\n\nスクリーンショットで撮り直すか、写真アプリで「JPEG」形式でエクスポートしてください。');
             return;
         }
     }
