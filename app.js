@@ -1103,12 +1103,6 @@ function loadTransactions() {
     unsubscribeFirestore = db.collection('transactions')
         .orderBy('createdAt', 'desc')
         .onSnapshot((snapshot) => {
-            // ローカルの保留中の書き込みは無視（二重表示防止）
-            if (snapshot.metadata.hasPendingWrites) {
-                console.log('保留中の書き込みをスキップ');
-                return;
-            }
-
             transactions = [];
             snapshot.forEach((doc) => {
                 transactions.push(doc.data());
