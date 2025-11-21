@@ -1,0 +1,650 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px 30px;
+    text-align: center;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+header p {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+main {
+    padding: 30px;
+}
+
+section {
+    margin-bottom: 40px;
+}
+
+/* API設定セクション */
+.api-settings-section {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.api-settings-section.hidden {
+    display: none;
+}
+
+.api-settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.api-settings-header h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+    color: #856404;
+}
+
+.api-settings-content {
+    display: block;
+}
+
+.api-settings-content.collapsed {
+    display: none;
+}
+
+.api-info {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.api-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.api-input-group label {
+    font-weight: 600;
+    color: #856404;
+}
+
+.api-input-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.api-input-wrapper input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+}
+
+.api-input-wrapper input:focus {
+    outline: none;
+    border-color: #ffc107;
+}
+
+.api-status {
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: none;
+}
+
+.api-status.success {
+    background: #d4edda;
+    color: #155724;
+    display: block;
+}
+
+.api-status.error {
+    background: #f8d7da;
+    color: #721c24;
+    display: block;
+}
+
+.api-help {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.api-help ol {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.api-help li {
+    margin: 5px 0;
+}
+
+.api-help a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.api-help a:hover {
+    text-decoration: underline;
+}
+
+h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+}
+
+/* アップロードエリア */
+.upload-section {
+    text-align: center;
+}
+
+.upload-area {
+    position: relative;
+    border: 3px dashed #667eea;
+    border-radius: 15px;
+    padding: 40px;
+    background: #f8f9ff;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    background: #e8eaff;
+    border-color: #764ba2;
+}
+
+.upload-area.dragover {
+    background: #e8eaff;
+    border-color: #764ba2;
+    transform: scale(1.02);
+}
+
+#fileInput {
+    display: none;
+}
+
+.upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+}
+
+.upload-icon {
+    font-size: 4em;
+}
+
+.upload-label span:last-child {
+    font-size: 1.1em;
+    color: #555;
+}
+
+.preview-area {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.preview-area img {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* ローディング */
+.loading {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.loading.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* フォーム */
+.form-section {
+    background: #f8f9ff;
+    padding: 30px;
+    border-radius: 15px;
+}
+
+.form-section.hidden {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+    font-family: inherit;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* ヒントテキスト */
+.form-group .hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.85em;
+    color: #888;
+}
+
+/* 入力が必要な項目のハイライト */
+.form-group.needs-input label {
+    color: #e53935;
+}
+
+.form-group.needs-input label::after {
+    content: " ← 入力してください";
+    font-size: 0.85em;
+    color: #e53935;
+    font-weight: normal;
+}
+
+.form-group.needs-input input,
+.form-group.needs-input select {
+    border-color: #e53935;
+    background-color: #fff5f5;
+}
+
+.form-group.needs-input input:focus,
+.form-group.needs-input select:focus {
+    border-color: #e53935;
+    box-shadow: 0 0 5px rgba(229, 57, 53, 0.3);
+}
+
+/* 入力済みの項目 */
+.form-group.filled label {
+    color: #2e7d32;
+}
+
+.form-group.filled label::after {
+    content: " ✓";
+    color: #2e7d32;
+}
+
+.form-group.filled input,
+.form-group.filled select {
+    border-color: #4caf50;
+    background-color: #f1f8e9;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+/* ボタン */
+.btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background: #d0d0d0;
+}
+
+.btn-success {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.btn-danger {
+    background: #f44336;
+    color: white;
+    padding: 8px 16px;
+    font-size: 0.9em;
+}
+
+.btn-danger:hover {
+    background: #da190b;
+}
+
+/* リストセクション */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.list-header h2 {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.header-controls {
+    display: flex;
+    gap: 10px;
+}
+
+/* フィルターセクション */
+.filter-section {
+    background: #f8f9ff;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.filter-group select,
+.filter-group input[type="text"] {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95em;
+    min-width: 120px;
+}
+
+.filter-group input[type="text"] {
+    min-width: 200px;
+}
+
+.filter-summary {
+    margin-top: 15px;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.filter-summary.hidden {
+    display: none;
+}
+
+.transaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.empty-message {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+    font-size: 1.1em;
+}
+
+.transaction-item {
+    background: #f8f9ff;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.transaction-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.transaction-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.transaction-image:hover {
+    transform: scale(1.05);
+}
+
+.transaction-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.transaction-details strong {
+    font-size: 1.3em;
+    color: #333;
+}
+
+.transaction-details p {
+    margin: 0;
+    color: #666;
+}
+
+.transaction-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.badge-payment {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.badge-detail {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.badge-type-outgoing {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.badge-type-incoming {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.transaction-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header {
+        padding: 30px 20px;
+    }
+
+    header h1 {
+        font-size: 2em;
+    }
+
+    main {
+        padding: 20px;
+    }
+
+    .upload-area {
+        padding: 30px 20px;
+    }
+
+    .upload-icon {
+        font-size: 3em;
+    }
+
+    .form-buttons {
+        flex-direction: column;
+    }
+
+    .list-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+
+    .header-controls {
+        flex-direction: column;
+    }
+
+    .header-controls .btn {
+        width: 100%;
+    }
+
+    .api-input-wrapper {
+        flex-direction: column;
+    }
+
+    .api-input-wrapper button {
+        width: 100%;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-group select,
+    .filter-group input[type="text"] {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .transaction-item {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .transaction-image {
+        width: 100%;
+        height: 200px;
+    }
+
+    .transaction-actions {
+        flex-direction: row;
+    }
+}

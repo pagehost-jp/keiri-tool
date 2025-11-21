@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>経理ツール - 領収書管理</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 経理ツール</h1>
+            <p>領収書を撮影・アップロードして自動記録</p>
+        </header>
+
+        <main>
+            <!-- 画像アップロードセクション -->
+            <section class="upload-section">
+                <h2>領収書を追加</h2>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="image/*" capture="environment">
+                    <label for="fileInput" class="upload-label">
+                        <span class="upload-icon">📸</span>
+                        <span>クリックまたはドラッグ＆ドロップで画像を追加</span>
+                    </label>
+                </div>
+                <div id="previewArea" class="preview-area"></div>
+                <div id="loadingIndicator" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>領収書を読み取り中...</p>
+                </div>
+            </section>
+
+            <!-- 手動入力/確認フォーム -->
+            <section class="form-section hidden" id="formSection">
+                <h2>取引情報</h2>
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label for="date">日付 *</label>
+                        <input type="date" id="date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">金額 *</label>
+                        <input type="number" id="amount" placeholder="1000" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="purpose">用途 *</label>
+                        <input type="text" id="purpose" placeholder="交通費、備品購入など" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">支払い方法 *</label>
+                        <select id="paymentMethod" required>
+                            <option value="">選択してください</option>
+                            <option value="現金">現金</option>
+                            <option value="クレジットカード">クレジットカード</option>
+                            <option value="銀行振込">銀行振込</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentDetail">カード詳細（任意）</label>
+                        <input type="text" id="paymentDetail" list="paymentDetailList" placeholder="例: 楽天カード、三井住友Visa">
+                        <datalist id="paymentDetailList">
+                            <!-- 選択肢はJSで動的に追加 -->
+                        </datalist>
+                        <small class="hint">入力した内容は次回から選択肢に追加されます</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transactionType">種別 *</label>
+                        <select id="transactionType" required>
+                            <option value="出金">出金</option>
+                            <option value="入金">入金</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">メモ（任意）</label>
+                        <textarea id="notes" rows="3" placeholder="追加情報があればここに"></textarea>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">保存</button>
+                        <button type="button" class="btn btn-secondary" id="cancelBtn">キャンセル</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- データ一覧 -->
+            <section class="list-section">
+                <div class="list-header">
+                    <h2>記録一覧</h2>
+                    <div class="header-controls">
+                        <button id="exportBtn" class="btn btn-success">Excelエクスポート</button>
+                        <button id="backupBtn" class="btn btn-secondary">バックアップ</button>
+                        <button id="restoreBtn" class="btn btn-secondary">復元</button>
+                        <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- フィルター機能 -->
+                <div class="filter-section">
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label for="filterYear">年:</label>
+                            <select id="filterYear">
+                                <option value="">全て</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterMonth">月:</label>
+                            <select id="filterMonth">
+                                <option value="">全て</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterType">種別:</label>
+                            <select id="filterType">
+                                <option value="">全て</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="searchKeyword">検索:</label>
+                            <input type="text" id="searchKeyword" placeholder="用途やメモで検索">
+                        </div>
+                        <button id="clearFilterBtn" class="btn btn-primary">全データ表示</button>
+                    </div>
+                    <div class="filter-summary" id="filterSummary"></div>
+                </div>
+
+                <div id="transactionList" class="transaction-list">
+                    <p class="empty-message">まだ記録がありません</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.0/dist/tesseract.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
