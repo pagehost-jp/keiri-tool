@@ -285,9 +285,10 @@ async function handleFile(file) {
             loadingIndicator.querySelector('p').textContent = '領収書を読み取り中...';
         } catch (error) {
             console.error('HEIC変換エラー:', error);
-            document.getElementById('loadingIndicator').classList.add('hidden');
-            alert('iPhone画像（HEIC形式）の変換に失敗しました。\n\n【解決方法】\n① Safari ブラウザで開く（HEICに対応）\n② または Mac のプレビューで JPEG に変換\n③ または iPhone設定 → カメラ → フォーマット → 互換性優先');
-            return;
+            // 変換失敗してもOCRは試す（Gemini APIはHEICを処理できる可能性）
+            console.log('HEIC変換失敗、元ファイルでOCRを試行...');
+            loadingIndicator.querySelector('p').textContent = '領収書を読み取り中...';
+            // プレビューは「変換中」のまま、processedFileは元のまま
         }
     }
 
@@ -295,17 +296,32 @@ async function handleFile(file) {
     const reader = new FileReader();
     reader.onload = async (e) => {
         const originalImageUrl = e.target.result;
-        showImagePreview(originalImageUrl);
+
+        // HEICでプレビューできない場合の処理
+        if (isHeic && processedFile === file) {
+            // 変換失敗したHEIC - プレビューは「画像形式」を表示
+            showImagePreview(null, 'HEIC形式（プレビュー不可）');
+        } else {
+            showImagePreview(originalImageUrl);
+        }
 
         // Base64データを取得（data:image/...;base64, の部分を除く）
         currentImageData = originalImageUrl.split(',')[1];
 
         // オリジナル画像でOCR解析（精度を保つため）
-        await analyzeReceipt(currentImageData);
+        // HEICの場合はmime_typeも渡す
+        const mimeType = isHeic && processedFile === file ? 'image/heic' : 'image/jpeg';
+        await analyzeReceipt(currentImageData, mimeType);
 
         // OCR後に画像を圧縮して保存用に設定（容量節約）
-        currentImageUrl = await compressImage(originalImageUrl);
-        console.log('画像圧縮完了:', Math.round(originalImageUrl.length / 1024) + 'KB →', Math.round(currentImageUrl.length / 1024) + 'KB');
+        // HEICで変換失敗の場合は画像なしで保存
+        if (isHeic && processedFile === file) {
+            currentImageUrl = null;  // 画像なしで保存
+            console.log('HEIC画像は保存できないため、画像なしで保存');
+        } else {
+            currentImageUrl = await compressImage(originalImageUrl);
+            console.log('画像圧縮完了:', Math.round(originalImageUrl.length / 1024) + 'KB →', Math.round(currentImageUrl.length / 1024) + 'KB');
+        }
     };
     reader.readAsDataURL(processedFile);
 }
@@ -340,13 +356,17 @@ function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
 }
 
 // 画像プレビュー表示
-function showImagePreview(imageUrl) {
+function showImagePreview(imageUrl, placeholder = null) {
     const previewArea = document.getElementById('previewArea');
-    previewArea.innerHTML = `<img src="${imageUrl}" alt="領収書プレビュー">`;
+    if (imageUrl) {
+        previewArea.innerHTML = `<img src="${imageUrl}" alt="領収書プレビュー">`;
+    } else if (placeholder) {
+        previewArea.innerHTML = `<div class="preview-placeholder">${placeholder}</div>`;
+    }
 }
 
 // 領収書を解析（Gemini API優先、なければTesseract.js）
-async function analyzeReceipt(imageData) {
+async function analyzeReceipt(imageData, mimeType = 'image/jpeg') {
     const loadingIndicator = document.getElementById('loadingIndicator');
     const formSection = document.getElementById('formSection');
 
@@ -357,8 +377,8 @@ async function analyzeReceipt(imageData) {
 
         if (geminiApiKey) {
             // Gemini APIで解析
-            console.log('Gemini APIで解析中...');
-            extractedData = await analyzeWithGemini(imageData);
+            console.log('Gemini APIで解析中...', mimeType);
+            extractedData = await analyzeWithGemini(imageData, mimeType);
         } else {
             // Tesseract.jsで解析（フォールバック）
             console.log('Tesseract.jsで解析中...');
@@ -378,7 +398,7 @@ async function analyzeReceipt(imageData) {
 }
 
 // Gemini APIで画像解析
-async function analyzeWithGemini(imageData) {
+async function analyzeWithGemini(imageData, mimeType = 'image/jpeg') {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
 
     const prompt = `この領収書/レシート画像から以下の情報を抽出してください。
@@ -392,6 +412,8 @@ JSON形式で回答してください（他の文章は不要）:
 
 読み取れない項目はnullにしてください。`;
 
+    console.log('Gemini APIに送信:', mimeType);
+
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -403,7 +425,7 @@ JSON形式で回答してください（他の文章は不要）:
                     { text: prompt },
                     {
                         inline_data: {
-                            mime_type: 'image/jpeg',
+                            mime_type: mimeType,
                             data: imageData
                         }
                     }
