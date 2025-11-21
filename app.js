@@ -299,7 +299,7 @@ async function analyzeReceipt(imageData) {
 
 // Gemini APIで画像解析
 async function analyzeWithGemini(imageData) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
 
     const prompt = `この領収書/レシート画像から以下の情報を抽出してください。
 JSON形式で回答してください（他の文章は不要）:
