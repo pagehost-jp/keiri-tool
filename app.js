@@ -859,8 +859,10 @@ function saveTransactions() {
 function loadTransactions() {
     // まずローカルストレージから読み込み（オフライン対応）
     const saved = localStorage.getItem(STORAGE_KEY);
+    let localTransactions = [];
     if (saved) {
-        transactions = JSON.parse(saved);
+        localTransactions = JSON.parse(saved);
+        transactions = localTransactions;
         renderTransactionList();
     }
 
@@ -880,6 +882,20 @@ function loadTransactions() {
             // ローカルにもバックアップ
             localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
 
+            // ローカルにあってFirestoreにないデータをアップロード
+            if (localTransactions.length > 0 && transactions.length === 0) {
+                console.log('ローカルデータをFirestoreにアップロード中...');
+                uploadLocalDataToFirestore(localTransactions);
+            } else if (localTransactions.length > transactions.length) {
+                // ローカルの方が多い場合、差分をアップロード
+                const firestoreIds = new Set(transactions.map(t => t.id));
+                const missingData = localTransactions.filter(t => !firestoreIds.has(t.id));
+                if (missingData.length > 0) {
+                    console.log('不足データをFirestoreにアップロード中:', missingData.length, '件');
+                    uploadLocalDataToFirestore(missingData);
+                }
+            }
+
             updateYearOptions();
             updateMonthOptions();
             updateTypeOptions();
@@ -893,6 +909,18 @@ function loadTransactions() {
                 transactions = JSON.parse(saved);
             }
         });
+}
+
+// ローカルデータをFirestoreにアップロード
+async function uploadLocalDataToFirestore(data) {
+    for (const transaction of data) {
+        try {
+            await saveTransactionToFirestore(transaction);
+        } catch (error) {
+            console.error('アップロードエラー:', error);
+        }
+    }
+    console.log('ローカルデータのアップロード完了:', data.length, '件');
 }
 
 // カスタム支払い詳細の選択肢を読み込み
