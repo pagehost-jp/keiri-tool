@@ -634,10 +634,18 @@ function fillFormWithExtractedData(data) {
         missingFields.push('日付');
     }
 
-    // 金額
+    // 金額（マイナスは除去、マイナスだった場合は出金に設定）
     if (data.amount) {
-        document.getElementById('amount').value = data.amount;
+        let amountStr = String(data.amount);
+        let isNegative = amountStr.startsWith('-') || amountStr.startsWith('−') || amountStr.startsWith('ー');
+        // マイナス記号を除去して絶対値に
+        let cleanAmount = amountStr.replace(/^[-−ー]/, '').replace(/,/g, '');
+        document.getElementById('amount').value = cleanAmount;
         amountGroup.classList.add('filled');
+        // マイナスだった場合は出金に設定
+        if (isNegative) {
+            document.getElementById('transactionType').value = '出金';
+        }
     } else {
         amountGroup.classList.add('needs-input');
         missingFields.push('金額');
