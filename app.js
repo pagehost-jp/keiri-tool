@@ -649,16 +649,19 @@ async function handleFormSubmit(event) {
     const paymentDetail = getPaymentDetailValue();
 
     const transaction = {
-        id: Date.now(),
+        id: editingTransactionId || Date.now(),
         date: document.getElementById('date').value,
         amount: parseInt(document.getElementById('amount').value),
         purpose: document.getElementById('purpose').value,
         paymentMethod: document.getElementById('paymentMethod').value,
-        paymentDetail: paymentDetail,  // カード詳細を追加
+        paymentDetail: paymentDetail,
         transactionType: document.getElementById('transactionType').value,
         notes: document.getElementById('notes').value,
         imageUrl: currentImageUrl,
-        createdAt: new Date().toISOString()
+        createdAt: editingTransactionId
+            ? transactions.find(t => t.id === editingTransactionId)?.createdAt || new Date().toISOString()
+            : new Date().toISOString(),
+        updatedAt: editingTransactionId ? new Date().toISOString() : null
     };
 
     // 新しい支払い詳細を選択肢に追加（次回から選べるように）
@@ -669,16 +672,25 @@ async function handleFormSubmit(event) {
     // Firestoreに保存
     await saveTransactionToFirestore(transaction);
 
-    // ローカルにも追加（Firestoreの同期が遅れた場合の即時表示用）
-    transactions.unshift(transaction);
+    if (editingTransactionId) {
+        // 編集モード: ローカル配列を更新
+        const index = transactions.findIndex(t => t.id === editingTransactionId);
+        if (index !== -1) {
+            transactions[index] = transaction;
+        }
+        alert('取引を更新しました！');
+    } else {
+        // 新規モード: ローカル配列に追加
+        transactions.unshift(transaction);
+        alert('取引を保存しました！（クラウドに同期済み）');
+    }
+
     saveTransactions();
     updateYearOptions();
     updateMonthOptions();
     updateTypeOptions();
     renderTransactionList();
     resetForm();
-
-    alert('取引を保存しました！（クラウドに同期済み）');
 }
 
 // フォームリセット
@@ -688,6 +700,10 @@ function resetForm() {
     document.getElementById('previewArea').innerHTML = '';
     currentImageData = null;
     currentImageUrl = null;
+
+    // 編集モードをクリア
+    editingTransactionId = null;
+    document.querySelector('#formSection h2').textContent = '取引情報';
 
     // 新規入力欄を非表示に
     document.getElementById('paymentDetailNew').classList.add('hidden');
@@ -791,6 +807,7 @@ function renderTransactionList() {
                     <div class="action-menu">
                         <button class="btn-menu" onclick="toggleActionMenu(this)">⋮</button>
                         <div class="action-dropdown">
+                            <button class="btn btn-secondary" onclick="editTransaction(${transaction.id})">編集</button>
                             <button class="btn btn-danger" onclick="deleteTransaction(${transaction.id})">削除</button>
                         </div>
                     </div>
@@ -842,6 +859,53 @@ function showImageModal(imageUrl) {
             </body>
         </html>
     `);
+}
+
+// 編集中の取引ID
+let editingTransactionId = null;
+
+// 取引を編集
+function editTransaction(id) {
+    const transaction = transactions.find(t => t.id === id);
+    if (!transaction) return;
+
+    // フォームに値を設定
+    document.getElementById('date').value = transaction.date;
+    document.getElementById('amount').value = transaction.amount;
+    document.getElementById('purpose').value = transaction.purpose;
+    document.getElementById('paymentMethod').value = transaction.paymentMethod;
+    document.getElementById('transactionType').value = transaction.transactionType;
+    document.getElementById('notes').value = transaction.notes || '';
+
+    // 支払い詳細を設定
+    const paymentDetailSelect = document.getElementById('paymentDetail');
+    if (transaction.paymentDetail) {
+        // 選択肢にあるか確認
+        const optionExists = Array.from(paymentDetailSelect.options).some(opt => opt.value === transaction.paymentDetail);
+        if (optionExists) {
+            paymentDetailSelect.value = transaction.paymentDetail;
+        } else {
+            paymentDetailSelect.value = '__new__';
+            document.getElementById('paymentDetailNew').value = transaction.paymentDetail;
+            document.getElementById('paymentDetailNew').classList.remove('hidden');
+        }
+    }
+
+    // 画像を設定
+    if (transaction.imageUrl) {
+        currentImageUrl = transaction.imageUrl;
+        showImagePreview(transaction.imageUrl);
+    }
+
+    // 編集モードを設定
+    editingTransactionId = id;
+
+    // フォームを表示してスクロール
+    document.getElementById('formSection').classList.remove('hidden');
+    document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
+
+    // フォームのタイトルを変更
+    document.querySelector('#formSection h2').textContent = '取引情報を編集';
 }
 
 // 取引削除

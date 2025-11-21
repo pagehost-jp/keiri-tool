@@ -613,6 +613,11 @@ h2 {
 .action-dropdown .btn {
     width: 100%;
     text-align: center;
+    margin-bottom: 5px;
+}
+
+.action-dropdown .btn:last-child {
+    margin-bottom: 0;
 }
 
 /* レスポンシブ対応 */
