@@ -75,6 +75,32 @@
                 </div>
             </div>
 
+            <!-- ストレージ使用状況 -->
+            <div class="admin-section">
+                <h4>ストレージ使用状況</h4>
+                <div class="storage-info">
+                    <div class="storage-item">
+                        <span class="storage-label">画像データ:</span>
+                        <span class="storage-value" id="imageStorageSize">計算中...</span>
+                    </div>
+                    <div class="storage-item">
+                        <span class="storage-label">取引データ:</span>
+                        <span class="storage-value" id="transactionStorageSize">計算中...</span>
+                    </div>
+                    <div class="storage-item">
+                        <span class="storage-label">合計使用量:</span>
+                        <span class="storage-value" id="totalStorageSize">計算中...</span>
+                    </div>
+                    <div class="storage-progress">
+                        <div class="storage-bar">
+                            <div class="storage-bar-fill" id="storageBarFill"></div>
+                        </div>
+                        <span class="storage-percent" id="storagePercent">0%</span>
+                    </div>
+                    <p class="storage-note">※ LocalStorageの推奨上限: 約5MB</p>
+                </div>
+            </div>
+
             <!-- データ管理 -->
             <div class="admin-section">
                 <h4>データ管理</h4>
@@ -221,6 +247,8 @@
                 <div class="list-header">
                     <h2>記録一覧</h2>
                     <div class="header-controls">
+                        <button id="quickMemoBtn2" class="btn btn-secondary">📋 簡易メモ</button>
+                        <button id="downloadImagesBtn" class="btn btn-primary">画像ダウンロード</button>
                         <button id="exportBtn" class="btn btn-success">Excelエクスポート</button>
                     </div>
                 </div>
@@ -305,6 +333,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.0/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>

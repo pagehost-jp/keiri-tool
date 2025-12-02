@@ -184,6 +184,10 @@ function setupEventListeners() {
     // エクスポートボタン
     exportBtn.addEventListener('click', exportToExcel);
 
+    // 画像ダウンロードボタン
+    const downloadImagesBtn = document.getElementById('downloadImagesBtn');
+    downloadImagesBtn.addEventListener('click', downloadImages);
+
     // バックアップボタン
     backupBtn.addEventListener('click', backupData);
 
@@ -1407,6 +1411,129 @@ function exportToExcel() {
     alert(`${filename} をダウンロードしました`);
 }
 
+// 画像ダウンロード（フィルター表示中のもの）
+async function downloadImages() {
+    // フィルター適用済みの取引を取得
+    let filteredTransactions = transactions.filter(transaction => {
+        const year = transaction.date.substring(0, 4);
+        const month = transaction.date.substring(5, 7);
+
+        // 年度でフィルター（12月は翌年度として扱う）
+        if (currentFilters.year) {
+            let fiscalYear = year;
+            if (month === '12') {
+                fiscalYear = String(parseInt(year) + 1);
+            }
+            if (fiscalYear !== currentFilters.year) {
+                return false;
+            }
+        }
+
+        // 月でフィルター
+        if (currentFilters.month) {
+            if (month !== currentFilters.month) {
+                return false;
+            }
+        }
+
+        // 種別でフィルター
+        if (currentFilters.type && transaction.transactionType !== currentFilters.type) {
+            return false;
+        }
+
+        // キーワード検索
+        if (currentFilters.keyword) {
+            const keyword = currentFilters.keyword.toLowerCase();
+            const purpose = transaction.purpose.toLowerCase();
+            const notes = (transaction.notes || '').toLowerCase();
+            if (!purpose.includes(keyword) && !notes.includes(keyword)) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    // 日付順にソート（古い順 = 昇順）
+    filteredTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // 画像があるものだけを抽出
+    const imagesWithData = filteredTransactions.filter(t => t.imageUrl);
+
+    if (imagesWithData.length === 0) {
+        alert('ダウンロードする画像がありません');
+        return;
+    }
+
+    if (!confirm(`${imagesWithData.length}枚の画像をダウンロードしますか？`)) {
+        return;
+    }
+
+    try {
+        // JSZipインスタンスを作成
+        const zip = new JSZip();
+
+        // 各画像をZIPに追加
+        for (let i = 0; i < imagesWithData.length; i++) {
+            const transaction = imagesWithData[i];
+            const imageUrl = transaction.imageUrl;
+
+            // Base64からblobに変換
+            const base64Data = imageUrl.split(',')[1];
+            const blob = base64ToBlob(base64Data, 'image/jpeg');
+
+            // ファイル名生成（日付_用途.jpg）
+            // 用途から使えない文字を除去
+            const safePurpose = transaction.purpose.replace(/[\/\\:*?"<>|]/g, '_');
+            const filename = `${transaction.date}_${safePurpose}.jpg`;
+
+            zip.file(filename, blob);
+        }
+
+        // ZIPファイルを生成
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+        // ダウンロード
+        const today = new Date().toISOString().split('T')[0];
+        const zipFilename = `領収書画像_${today}.zip`;
+
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(zipBlob);
+        a.href = url;
+        a.download = zipFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(`${imagesWithData.length}枚の画像をダウンロードしました！\nZIPファイルを解凍してご確認ください。`);
+
+    } catch (error) {
+        console.error('画像ダウンロードエラー:', error);
+        alert('画像のダウンロードに失敗しました: ' + error.message);
+    }
+}
+
+// Base64をBlobに変換
+function base64ToBlob(base64, mimeType) {
+    const byteCharacters = atob(base64);
+    const byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+    }
+
+    return new Blob(byteArrays, { type: mimeType });
+}
+
 // 年の選択肢を更新
 function updateYearOptions() {
     const filterYear = document.getElementById('filterYear');
@@ -1700,6 +1827,7 @@ function setupAuth() {
     function openAdminPanel() {
         adminPanel.classList.remove('hidden');
         adminOverlay.classList.remove('hidden');
+        updateStorageInfo(); // ストレージ情報を更新
     }
 
     function closeAdminPanelFn() {
@@ -2162,19 +2290,26 @@ async function clearUserApiKey() {
 // 簡易メモの初期化
 function setupQuickMemo() {
     const quickMemoBtn = document.getElementById('quickMemoBtn');
+    const quickMemoBtn2 = document.getElementById('quickMemoBtn2'); // 記録一覧のボタン
     const closeQuickMemo = document.getElementById('closeQuickMemo');
     const quickMemoOverlay = document.getElementById('quickMemoOverlay');
     const quickMemoModal = document.getElementById('quickMemoModal');
     const quickMemoTextarea = document.getElementById('quickMemoTextarea');
     const quickMemoStatus = document.getElementById('quickMemoStatus');
 
-    // メモを開く
-    quickMemoBtn.addEventListener('click', () => {
+    // メモを開く関数
+    const openQuickMemo = () => {
         quickMemoOverlay.classList.remove('hidden');
         quickMemoModal.classList.remove('hidden');
         loadQuickMemo();
         quickMemoTextarea.focus();
-    });
+    };
+
+    // ヘッダーのボタン
+    quickMemoBtn.addEventListener('click', openQuickMemo);
+
+    // 記録一覧のボタン
+    quickMemoBtn2.addEventListener('click', openQuickMemo);
 
     // メモを閉じる
     function closeModal() {
@@ -2228,6 +2363,79 @@ function loadQuickMemo() {
     if (saved) {
         textarea.value = saved;
     }
+}
+
+// ========== ストレージ使用状況 ==========
+
+// ストレージ情報を更新
+function updateStorageInfo() {
+    // LocalStorageの全データのサイズを計算
+    let totalSize = 0;
+    let imageSize = 0;
+    let transactionSize = 0;
+
+    // 取引データのサイズ
+    const transactionsData = localStorage.getItem(STORAGE_KEY);
+    if (transactionsData) {
+        transactionSize = new Blob([transactionsData]).size;
+        totalSize += transactionSize;
+
+        // 画像データのサイズを個別に計算
+        try {
+            const parsedTransactions = JSON.parse(transactionsData);
+            parsedTransactions.forEach(t => {
+                if (t.imageUrl) {
+                    imageSize += new Blob([t.imageUrl]).size;
+                }
+            });
+        } catch (e) {
+            console.error('取引データの解析エラー:', e);
+        }
+    }
+
+    // その他のLocalStorageデータ
+    for (let key in localStorage) {
+        if (key !== STORAGE_KEY && localStorage.hasOwnProperty(key)) {
+            const itemSize = new Blob([localStorage.getItem(key)]).size;
+            totalSize += itemSize;
+        }
+    }
+
+    // 表示を更新
+    document.getElementById('imageStorageSize').textContent = formatBytes(imageSize);
+    document.getElementById('transactionStorageSize').textContent = formatBytes(transactionSize - imageSize);
+    document.getElementById('totalStorageSize').textContent = formatBytes(totalSize);
+
+    // プログレスバーを更新（5MBを基準）
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const percentage = Math.min((totalSize / maxSize) * 100, 100);
+    const barFill = document.getElementById('storageBarFill');
+    const percentText = document.getElementById('storagePercent');
+
+    barFill.style.width = percentage + '%';
+    percentText.textContent = percentage.toFixed(1) + '%';
+
+    // 使用率に応じて色を変更
+    barFill.classList.remove('warning', 'danger');
+    if (percentage >= 90) {
+        barFill.classList.add('danger');
+    } else if (percentage >= 70) {
+        barFill.classList.add('warning');
+    }
+
+    // 警告表示
+    if (percentage >= 90) {
+        alert('⚠️ ストレージ容量が90%を超えています。\n古い画像を削除するか、バックアップを取ってデータを整理してください。');
+    }
+}
+
+// バイト数を人間が読みやすい形式に変換
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // ========== ZOOMメモ機能 ==========
