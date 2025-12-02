@@ -33,6 +33,8 @@ let currentFilters = {
 const STORAGE_KEY = 'keiri_transactions';
 const PAYMENT_DETAILS_KEY = 'keiri_payment_details';
 const GEMINI_API_KEY = 'keiri_gemini_api_key';
+const QUICK_MEMO_KEY = 'keiri_quick_memo';
+const ZOOM_MEMO_KEY = 'keiri_zoom_memo';
 
 // カスタム支払い詳細の選択肢（使用回数付き）
 // 形式: { name: "楽天カード", count: 5 }
@@ -57,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFormValidation();
     setupApiSettingsListeners();
     setupMemoSuggestion();
+    setupQuickMemo();  // 簡易メモ機能の初期化
+    setupZoomMemo();  // ZOOMメモ機能の初期化
 });
 
 // フォームバリデーションの設定（日本語メッセージ）
@@ -2150,5 +2154,149 @@ async function clearUserApiKey() {
         console.log('APIキーをFirestoreから削除しました');
     } catch (error) {
         console.error('APIキー削除エラー:', error);
+    }
+}
+
+// ========== 簡易メモ機能 ==========
+
+// 簡易メモの初期化
+function setupQuickMemo() {
+    const quickMemoBtn = document.getElementById('quickMemoBtn');
+    const closeQuickMemo = document.getElementById('closeQuickMemo');
+    const quickMemoOverlay = document.getElementById('quickMemoOverlay');
+    const quickMemoModal = document.getElementById('quickMemoModal');
+    const quickMemoTextarea = document.getElementById('quickMemoTextarea');
+    const quickMemoStatus = document.getElementById('quickMemoStatus');
+
+    // メモを開く
+    quickMemoBtn.addEventListener('click', () => {
+        quickMemoOverlay.classList.remove('hidden');
+        quickMemoModal.classList.remove('hidden');
+        loadQuickMemo();
+        quickMemoTextarea.focus();
+    });
+
+    // メモを閉じる
+    function closeModal() {
+        quickMemoOverlay.classList.add('hidden');
+        quickMemoModal.classList.add('hidden');
+    }
+
+    closeQuickMemo.addEventListener('click', closeModal);
+    quickMemoOverlay.addEventListener('click', closeModal);
+
+    // ESCキーで閉じる（簡易メモとZOOMメモの両方に対応）
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (!quickMemoModal.classList.contains('hidden')) {
+                closeModal();
+            }
+        }
+    });
+
+    // 自動保存（入力から1秒後）
+    let saveTimeout;
+    quickMemoTextarea.addEventListener('input', () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveQuickMemo();
+            showSaveStatus();
+        }, 1000);
+    });
+
+    // 保存完了メッセージを表示
+    function showSaveStatus() {
+        quickMemoStatus.classList.add('visible');
+        setTimeout(() => {
+            quickMemoStatus.classList.remove('visible');
+        }, 2000);
+    }
+}
+
+// 簡易メモを保存
+function saveQuickMemo() {
+    const textarea = document.getElementById('quickMemoTextarea');
+    const content = textarea.value;
+    localStorage.setItem(QUICK_MEMO_KEY, content);
+    console.log('簡易メモを保存しました');
+}
+
+// 簡易メモを読み込み
+function loadQuickMemo() {
+    const textarea = document.getElementById('quickMemoTextarea');
+    const saved = localStorage.getItem(QUICK_MEMO_KEY);
+    if (saved) {
+        textarea.value = saved;
+    }
+}
+
+// ========== ZOOMメモ機能 ==========
+
+// ZOOMメモの初期化
+function setupZoomMemo() {
+    const zoomMemoBtn = document.getElementById('zoomMemoBtn');
+    const closeZoomMemo = document.getElementById('closeZoomMemo');
+    const zoomMemoOverlay = document.getElementById('zoomMemoOverlay');
+    const zoomMemoModal = document.getElementById('zoomMemoModal');
+    const zoomMemoTextarea = document.getElementById('zoomMemoTextarea');
+    const zoomMemoStatus = document.getElementById('zoomMemoStatus');
+
+    // メモを開く
+    zoomMemoBtn.addEventListener('click', () => {
+        zoomMemoOverlay.classList.remove('hidden');
+        zoomMemoModal.classList.remove('hidden');
+        loadZoomMemo();
+        zoomMemoTextarea.focus();
+    });
+
+    // メモを閉じる
+    function closeModal() {
+        zoomMemoOverlay.classList.add('hidden');
+        zoomMemoModal.classList.add('hidden');
+    }
+
+    closeZoomMemo.addEventListener('click', closeModal);
+    zoomMemoOverlay.addEventListener('click', closeModal);
+
+    // ESCキーで閉じる
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !zoomMemoModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    // 自動保存（入力から1秒後）
+    let saveTimeout;
+    zoomMemoTextarea.addEventListener('input', () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveZoomMemo();
+            showSaveStatus();
+        }, 1000);
+    });
+
+    // 保存完了メッセージを表示
+    function showSaveStatus() {
+        zoomMemoStatus.classList.add('visible');
+        setTimeout(() => {
+            zoomMemoStatus.classList.remove('visible');
+        }, 2000);
+    }
+}
+
+// ZOOMメモを保存
+function saveZoomMemo() {
+    const textarea = document.getElementById('zoomMemoTextarea');
+    const content = textarea.value;
+    localStorage.setItem(ZOOM_MEMO_KEY, content);
+    console.log('ZOOMメモを保存しました');
+}
+
+// ZOOMメモを読み込み
+function loadZoomMemo() {
+    const textarea = document.getElementById('zoomMemoTextarea');
+    const saved = localStorage.getItem(ZOOM_MEMO_KEY);
+    if (saved) {
+        textarea.value = saved;
     }
 }

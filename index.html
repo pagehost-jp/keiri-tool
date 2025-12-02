@@ -25,6 +25,12 @@
                             ⚙
                             <span id="pendingBadge" class="pending-badge hidden">0</span>
                         </button>
+                        <button id="quickMemoBtn" class="btn-quick-memo" title="簡易メモ">
+                            📋
+                        </button>
+                        <button id="zoomMemoBtn" class="btn-zoom-memo" title="ZOOMメモ">
+                            📝
+                        </button>
                         <button id="logoutBtn" class="btn-logout">ログアウト</button>
                     </div>
                 </div>
@@ -94,7 +100,7 @@
 
         <main>
             <!-- API設定セクション -->
-            <section class="api-settings-section" id="apiSettingsSection">
+            <section class="api-settings-section hidden" id="apiSettingsSection">
                 <div class="api-settings-header">
                     <h2>API設定</h2>
                     <button id="toggleApiSettings" class="btn btn-secondary">設定を隠す</button>
@@ -263,6 +269,38 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- 簡易メモモーダル -->
+    <div id="quickMemoOverlay" class="quick-memo-overlay hidden"></div>
+    <div id="quickMemoModal" class="quick-memo-modal hidden">
+        <div class="quick-memo-header">
+            <h3>📋 簡易メモ</h3>
+            <button id="closeQuickMemo" class="btn-close-quick">&times;</button>
+        </div>
+        <div class="quick-memo-content">
+            <p class="quick-memo-hint">ちょっとしたメモをサッと残せます。自動保存されます。</p>
+            <textarea id="quickMemoTextarea" placeholder="メモを入力...&#10;例：&#10;・〇〇を確認する&#10;・△△に連絡&#10;・□□の資料を準備"></textarea>
+            <div class="quick-memo-footer">
+                <span class="quick-memo-status" id="quickMemoStatus">自動保存されました</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZOOMメモモーダル -->
+    <div id="zoomMemoOverlay" class="zoom-memo-overlay hidden"></div>
+    <div id="zoomMemoModal" class="zoom-memo-modal hidden">
+        <div class="zoom-memo-header">
+            <h3>📝 ZOOMメモ</h3>
+            <button id="closeZoomMemo" class="btn-close-zoom">&times;</button>
+        </div>
+        <div class="zoom-memo-content">
+            <p class="zoom-memo-hint">経理の方とのZOOMで聞いた内容をメモできます。自動保存されます。</p>
+            <textarea id="zoomMemoTextarea" placeholder="メモを入力...&#10;例：&#10;・〇〇の勘定科目は△△&#10;・□□の処理方法について確認&#10;・次回までに◇◇を準備"></textarea>
+            <div class="zoom-memo-footer">
+                <span class="zoom-memo-status" id="zoomMemoStatus">自動保存されました</span>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
