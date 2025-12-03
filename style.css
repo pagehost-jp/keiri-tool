@@ -2037,3 +2037,32 @@ h2 {
         min-height: 250px;
     }
 }
+
+/* 確定申告モード切り替え */
+.tax-mode-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.tax-mode-btn {
+    padding: 10px 20px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tax-mode-btn:hover {
+    background: #f0f0ff;
+}
+
+.tax-mode-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}

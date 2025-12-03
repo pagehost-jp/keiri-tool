@@ -26,7 +26,8 @@ let currentFilters = {
     year: '',
     month: '',
     type: '',
-    keyword: ''
+    keyword: '',
+    mode: 'calendar'  // 'calendar' = 通常(1-12月), 'tax' = 確定申告モード(4-翌年3月)
 };
 
 // ローカルストレージのキー（APIキーなど個人設定用）
@@ -56,6 +57,20 @@ function getUserTransactionsCollection() {
         .collection('users')
         .doc(user.uid)
         .collection('transactions');
+}
+
+// ========== 年度計算ヘルパー ==========
+function getFiscalYearForTransaction(dateStr) {
+    const year = parseInt(dateStr.substring(0, 4), 10);
+    const month = parseInt(dateStr.substring(5, 7), 10);
+
+    if (currentFilters.mode === 'tax') {
+        // 確定申告モード：4月〜翌年3月
+        return month <= 3 ? year - 1 : year;
+    } else {
+        // 通常モード：1〜12月のカレンダー年
+        return year;
+    }
 }
 
 // DOMロード時の初期化
@@ -261,20 +276,42 @@ function setupFilterListeners() {
         renderTransactionList();
     });
 
-    // 初期年度を設定（会計年度：4月始まり）
+    // 確定申告モード切り替え
+    const taxModeBtn = document.getElementById('taxModeBtn');
+    taxModeBtn.addEventListener('click', () => {
+        if (currentFilters.mode === 'calendar') {
+            currentFilters.mode = 'tax';
+            taxModeBtn.textContent = '通常モード';
+            taxModeBtn.classList.add('active');
+        } else {
+            currentFilters.mode = 'calendar';
+            taxModeBtn.textContent = '確定申告モード';
+            taxModeBtn.classList.remove('active');
+        }
+        updateYearDisplay();
+        updateMonthTabs();
+        renderTransactionList();
+    });
+
+    // 初期年度を設定（通常はカレンダー年）
     const now = new Date();
-    let fiscalYear = now.getFullYear();
-    // 1月〜3月は前年度
-    if (now.getMonth() < 3) {  // getMonth() は 0-11 なので、0,1,2 = 1,2,3月
-        fiscalYear--;
-    }
-    currentFilters.year = String(fiscalYear);
+    currentFilters.year = String(now.getFullYear());
+    currentFilters.mode = 'calendar';  // デフォルトは通常モード
     updateYearDisplay();
 }
 
 // 年度表示を更新
 function updateYearDisplay() {
-    document.getElementById('currentYearDisplay').textContent = `${currentFilters.year}年度`;
+    const yearDisplay = document.getElementById('currentYearDisplay');
+
+    if (currentFilters.mode === 'tax') {
+        // 確定申告モード
+        const y = Number(currentFilters.year);
+        yearDisplay.textContent = `${y}年度（4月〜${y + 1}年3月）`;
+    } else {
+        // 通常モード
+        yearDisplay.textContent = `${currentFilters.year}年`;
+    }
 }
 
 // 月タブを更新（データがある月をハイライト）
@@ -871,18 +908,12 @@ function renderTransactionList() {
 
     // フィルター適用
     let filteredTransactions = transactions.filter(transaction => {
-        const year = transaction.date.substring(0, 4);
         const month = transaction.date.substring(5, 7);
 
-        // 年度でフィルター（4月始まり）
+        // 年度でフィルター（モードに応じて切り替え）
         if (currentFilters.year) {
-            let fiscalYear = year;
-            // 1月〜3月は前年度に属する
-            if (month >= '01' && month <= '03') {
-                fiscalYear = String(parseInt(year) - 1);
-            }
-            // 4月〜12月は当年度のまま
-            if (fiscalYear !== currentFilters.year) {
+            const fy = String(getFiscalYearForTransaction(transaction.date));
+            if (fy !== currentFilters.year) {
                 return false;
             }
         }
@@ -1466,18 +1497,12 @@ function exportToExcel() {
 async function downloadImages() {
     // フィルター適用済みの取引を取得
     let filteredTransactions = transactions.filter(transaction => {
-        const year = transaction.date.substring(0, 4);
         const month = transaction.date.substring(5, 7);
 
-        // 年度でフィルター（4月始まり）
+        // 年度でフィルター（モードに応じて切り替え）
         if (currentFilters.year) {
-            let fiscalYear = year;
-            // 1月〜3月は前年度に属する
-            if (month >= '01' && month <= '03') {
-                fiscalYear = String(parseInt(year) - 1);
-            }
-            // 4月〜12月は当年度のまま
-            if (fiscalYear !== currentFilters.year) {
+            const fy = String(getFiscalYearForTransaction(transaction.date));
+            if (fy !== currentFilters.year) {
                 return false;
             }
         }
