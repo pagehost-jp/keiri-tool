@@ -12,6 +12,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
 // 現在のユーザー情報
 let currentUser = null;
@@ -20,8 +21,9 @@ let isApproved = false;
 
 // グローバル変数
 let transactions = [];
-let currentImageData = null;
-let currentImageUrl = null;
+let currentImageData = null;  // OCR用（base64）
+let currentImageUrl = null;   // プレビュー用（base64、後で削除予定）
+let currentImageFile = null;  // Storage保存用（元Fileオブジェクト）
 let currentFilters = {
     year: '',
     month: '',
@@ -70,6 +72,137 @@ function getFiscalYearForTransaction(dateStr) {
     } else {
         // 通常モード：1〜12月のカレンダー年
         return year;
+    }
+}
+
+// ========== Firebase Storage ヘルパー関数 ==========
+
+/**
+ * 画像を圧縮（Canvas APIを使用）
+ * @param {File|Blob} file - 圧縮する画像ファイル
+ * @param {number} maxWidth - 最大幅（デフォルト: 1200px）
+ * @param {number} quality - JPEG品質（0-1、デフォルト: 0.8）
+ * @returns {Promise<Blob>} 圧縮された画像Blob
+ */
+async function compressImage(file, maxWidth = 1200, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // 最大幅を超える場合はリサイズ
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // JPEG形式でBlob化
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            console.log(`画像圧縮完了: ${Math.round(file.size / 1024)}KB → ${Math.round(blob.size / 1024)}KB`);
+                            resolve(blob);
+                        } else {
+                            reject(new Error('画像圧縮に失敗しました'));
+                        }
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+            img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * 画像をFirebase Storageにアップロード
+ * @param {File|Blob} file - アップロードする画像ファイル
+ * @param {number} transactionId - トランザクションID
+ * @returns {Promise<Object>} アップロード結果（url, path, size, type）
+ */
+async function uploadImageToStorage(file, transactionId) {
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error('ログインしていません');
+    }
+
+    try {
+        // 画像を圧縮
+        console.log('画像を圧縮中...');
+        const compressedBlob = await compressImage(file, 1200, 0.8);
+
+        // ファイル名を生成
+        const fileName = `receipt_${transactionId}.jpg`;
+        const compressedFile = new File([compressedBlob], fileName, {
+            type: 'image/jpeg'
+        });
+
+        // Storageパス
+        const storagePath = `users/${user.uid}/receipts/${transactionId}.jpg`;
+        const storageRef = storage.ref(storagePath);
+
+        // アップロード
+        console.log(`Storageにアップロード中: ${storagePath}`);
+        const snapshot = await storageRef.put(compressedFile, {
+            contentType: 'image/jpeg',
+            customMetadata: {
+                transactionId: String(transactionId),
+                uploadedAt: new Date().toISOString()
+            }
+        });
+
+        // ダウンロードURL取得
+        const downloadURL = await snapshot.ref.getDownloadURL();
+
+        console.log('Storage保存成功:', {
+            path: storagePath,
+            size: `${Math.round(compressedFile.size / 1024)}KB`,
+            url: downloadURL
+        });
+
+        return {
+            url: downloadURL,
+            path: storagePath,
+            size: compressedFile.size,
+            type: 'image/jpeg'
+        };
+    } catch (error) {
+        console.error('Storage保存エラー:', error);
+        throw error;
+    }
+}
+
+/**
+ * Firebase Storageから画像を削除
+ * @param {string} imagePath - 削除する画像のStorageパス
+ */
+async function deleteImageFromStorage(imagePath) {
+    if (!imagePath) {
+        return;
+    }
+
+    try {
+        await storage.ref(imagePath).delete();
+        console.log('Storage画像削除成功:', imagePath);
+    } catch (error) {
+        // object-not-foundエラーは無視（すでに削除済み）
+        if (error.code !== 'storage/object-not-found') {
+            console.error('Storage画像削除エラー:', error);
+            throw error;
+        }
     }
 }
 
@@ -414,6 +547,9 @@ async function handleFile(file) {
         return;
     }
 
+    // 元のFileオブジェクトを保存（Storage保存用）
+    currentImageFile = file;
+
     const reader = new FileReader();
     reader.onload = async (e) => {
         const originalImageUrl = e.target.result;
@@ -425,15 +561,15 @@ async function handleFile(file) {
         // OCR解析
         await analyzeReceipt(currentImageData);
 
-        // 画像を圧縮して保存用に設定
-        currentImageUrl = await compressImage(originalImageUrl);
+        // 画像を圧縮して保存用に設定（プレビュー用、後で削除予定）
+        currentImageUrl = await compressImageForPreview(originalImageUrl);
         console.log('画像圧縮完了:', Math.round(originalImageUrl.length / 1024) + 'KB →', Math.round(currentImageUrl.length / 1024) + 'KB');
     };
     reader.readAsDataURL(file);
 }
 
-// 画像を圧縮（OCR後に実行、保存用）
-function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
+// 画像を圧縮（OCR後に実行、プレビュー用）
+function compressImageForPreview(dataUrl, maxWidth = 800, quality = 0.7) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -1251,11 +1387,26 @@ async function saveTransactionToFirestore(transaction) {
             return;
         }
 
-        // 画像データが大きすぎる場合は保存しない（Firestoreの1MB制限）
         const transactionData = { ...transaction };
-        if (transactionData.imageUrl && transactionData.imageUrl.length > 900000) {
-            console.warn('画像が大きすぎるため、画像なしで保存します');
-            transactionData.imageUrl = null;
+
+        // 🔥 新規: 画像がある場合はStorageにアップロード
+        if (currentImageFile) {
+            try {
+                console.log('画像をStorageにアップロード中...');
+                const imageData = await uploadImageToStorage(currentImageFile, transaction.id);
+
+                // Firestoreに保存する画像情報（URLとメタ情報のみ）
+                transactionData.imageUrl = imageData.url;
+                transactionData.imagePath = imageData.path;
+                transactionData.imageSize = imageData.size;
+                transactionData.imageType = imageData.type;
+
+                console.log('画像アップロード完了:', imageData.path);
+            } catch (error) {
+                console.error('画像アップロードエラー:', error);
+                // 画像アップロード失敗時はテキストデータのみ保存
+                alert('画像の保存に失敗しましたが、テキストデータは保存します');
+            }
         }
 
         // updatedAt / createdAt を補完
@@ -1283,6 +1434,16 @@ async function deleteTransactionFromFirestore(id) {
         }
 
         const col = getUserTransactionsCollection();
+
+        // 🔥 新規: 削除前にimagePath を取得してStorageからも削除
+        const doc = await col.doc(String(id)).get();
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.imagePath) {
+                await deleteImageFromStorage(data.imagePath);
+            }
+        }
+
         await col.doc(String(id)).delete();
         console.log('Firestoreから削除しました (ユーザー別):', id);
     } catch (error) {
@@ -1292,7 +1453,18 @@ async function deleteTransactionFromFirestore(id) {
 
 // ローカルストレージに保存（バックアップ用）
 function saveTransactions() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    // 🔥 新規: 画像本体（base64）を除外して保存（容量削減）
+    const transactionsForStorage = transactions.map(t => {
+        const cleaned = { ...t };
+        // imagePathがある場合（=Storageに保存済み）は、base64のimageUrlを除外
+        if (cleaned.imagePath && cleaned.imageUrl && cleaned.imageUrl.startsWith('data:')) {
+            // base64画像は削除、Storage URLのみ保持
+            delete cleaned.imageUrl;
+        }
+        return cleaned;
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactionsForStorage));
 }
 
 // Firestoreからリアルタイムで読み込み

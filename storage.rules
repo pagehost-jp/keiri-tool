@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ========== ユーザーごとの領収書画像 ==========
+    match /users/{userId}/receipts/{receiptId} {
+      // 自分のデータのみアクセス可能
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+
+      // アップロード時の制限
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            // ファイルサイズ: 10MB以下
+                            && request.resource.size < 10 * 1024 * 1024
+                            // 画像ファイルのみ
+                            && request.resource.contentType.matches('image/.*');
+    }
+
+    // ========== それ以外は全てブロック ==========
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
