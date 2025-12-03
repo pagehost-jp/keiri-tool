@@ -261,8 +261,14 @@ function setupFilterListeners() {
         renderTransactionList();
     });
 
-    // 初期年度を設定（現在の年）
-    currentFilters.year = String(new Date().getFullYear());
+    // 初期年度を設定（会計年度：4月始まり）
+    const now = new Date();
+    let fiscalYear = now.getFullYear();
+    // 1月〜3月は前年度
+    if (now.getMonth() < 3) {  // getMonth() は 0-11 なので、0,1,2 = 1,2,3月
+        fiscalYear--;
+    }
+    currentFilters.year = String(fiscalYear);
     updateYearDisplay();
 }
 
@@ -868,12 +874,14 @@ function renderTransactionList() {
         const year = transaction.date.substring(0, 4);
         const month = transaction.date.substring(5, 7);
 
-        // 年度でフィルター（12月は翌年度として扱う）
+        // 年度でフィルター（4月始まり）
         if (currentFilters.year) {
             let fiscalYear = year;
-            if (month === '12') {
-                fiscalYear = String(parseInt(year) + 1);
+            // 1月〜3月は前年度に属する
+            if (month >= '01' && month <= '03') {
+                fiscalYear = String(parseInt(year) - 1);
             }
+            // 4月〜12月は当年度のまま
             if (fiscalYear !== currentFilters.year) {
                 return false;
             }
@@ -1461,12 +1469,14 @@ async function downloadImages() {
         const year = transaction.date.substring(0, 4);
         const month = transaction.date.substring(5, 7);
 
-        // 年度でフィルター（12月は翌年度として扱う）
+        // 年度でフィルター（4月始まり）
         if (currentFilters.year) {
             let fiscalYear = year;
-            if (month === '12') {
-                fiscalYear = String(parseInt(year) + 1);
+            // 1月〜3月は前年度に属する
+            if (month >= '01' && month <= '03') {
+                fiscalYear = String(parseInt(year) - 1);
             }
+            // 4月〜12月は当年度のまま
             if (fiscalYear !== currentFilters.year) {
                 return false;
             }
