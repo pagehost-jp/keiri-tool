@@ -314,24 +314,51 @@ function updateYearDisplay() {
     }
 }
 
+// 月タブの順序を更新（確定申告モードのときは4月始まり）
+function updateMonthTabOrder() {
+    const monthTabs = document.getElementById('monthTabs');
+    const tabs = monthTabs.querySelectorAll('.month-tab');
+
+    tabs.forEach(tab => {
+        const month = tab.dataset.month;
+
+        if (month === 'all') {
+            // 「全て」ボタンは常に最後
+            tab.style.order = '99';
+        } else if (currentFilters.mode === 'tax') {
+            // 確定申告モード: 4月〜3月の順番
+            const monthNum = parseInt(month, 10);
+            if (monthNum >= 4) {
+                // 4月〜12月 → order: 1〜9
+                tab.style.order = String(monthNum - 3);
+            } else {
+                // 1月〜3月 → order: 10〜12
+                tab.style.order = String(monthNum + 9);
+            }
+        } else {
+            // 通常モード: 1月〜12月の順番
+            tab.style.order = month;
+        }
+    });
+}
+
 // 月タブを更新（データがある月をハイライト）
 function updateMonthTabs() {
     const monthTabs = document.getElementById('monthTabs');
     const tabs = monthTabs.querySelectorAll('.month-tab');
 
+    // 月タブの順序を変更（確定申告モードのときは4月始まり）
+    updateMonthTabOrder();
+
     // 各月のデータ件数をカウント
     const monthCounts = {};
     transactions.forEach(t => {
-        const year = t.date.substring(0, 4);
         const month = t.date.substring(5, 7);
 
-        // 12月は前年度として扱う
-        let fiscalYear = year;
-        if (month === '12') {
-            fiscalYear = String(parseInt(year) + 1);
-        }
+        // モードに応じて年度計算
+        const fy = String(getFiscalYearForTransaction(t.date));
 
-        if (fiscalYear === currentFilters.year) {
+        if (fy === currentFilters.year) {
             monthCounts[month] = (monthCounts[month] || 0) + 1;
         }
     });
