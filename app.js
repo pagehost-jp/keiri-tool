@@ -2165,7 +2165,13 @@ async function cleanupDuplicates() {
     }
 
     try {
-        const snapshot = await db.collection('transactions').get();
+        if (!auth.currentUser) {
+            alert('ログインしてください');
+            return;
+        }
+
+        const col = getUserTransactionsCollection();
+        const snapshot = await col.get();
         const allDocs = [];
         snapshot.forEach(doc => {
             allDocs.push({ id: doc.id, data: doc.data() });
@@ -2201,7 +2207,7 @@ async function cleanupDuplicates() {
         // 削除実行
         let deleted = 0;
         for (const id of duplicateIds) {
-            await db.collection('transactions').doc(id).delete();
+            await col.doc(id).delete();
             deleted++;
             if (deleted % 10 === 0) {
                 console.log(`${deleted}/${duplicateIds.length} 削除完了`);
@@ -2227,7 +2233,13 @@ async function deleteAllData() {
     }
 
     try {
-        const snapshot = await db.collection('transactions').get();
+        if (!auth.currentUser) {
+            alert('ログインしてください');
+            return;
+        }
+
+        const col = getUserTransactionsCollection();
+        const snapshot = await col.get();
         const total = snapshot.size;
 
         if (total === 0) {
