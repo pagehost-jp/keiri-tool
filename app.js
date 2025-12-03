@@ -46,6 +46,18 @@ let geminiApiKey = null;
 // Firestoreのリアルタイムリスナー解除用
 let unsubscribeFirestore = null;
 
+// ========== ユーザーごとのFirestoreコレクション取得ヘルパー ==========
+function getUserTransactionsCollection() {
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error('ログインしていません');
+    }
+    return db
+        .collection('users')
+        .doc(user.uid)
+        .collection('transactions');
+}
+
 // DOMロード時の初期化
 document.addEventListener('DOMContentLoaded', () => {
     setupAuth();  // 認証を最初にセットアップ
@@ -1167,6 +1179,12 @@ async function deleteTransaction(id) {
 // Firestoreに保存（1件追加）
 async function saveTransactionToFirestore(transaction) {
     try {
+        if (!auth.currentUser) {
+            console.warn('ログインしていないため、ローカルのみ保存します');
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+            return;
+        }
+
         // 画像データが大きすぎる場合は保存しない（Firestoreの1MB制限）
         const transactionData = { ...transaction };
         if (transactionData.imageUrl && transactionData.imageUrl.length > 900000) {
@@ -1174,8 +1192,15 @@ async function saveTransactionToFirestore(transaction) {
             transactionData.imageUrl = null;
         }
 
-        await db.collection('transactions').doc(String(transaction.id)).set(transactionData);
-        console.log('Firestoreに保存しました:', transaction.id);
+        // updatedAt / createdAt を補完
+        const now = Date.now();
+        transactionData.updatedAt = transactionData.updatedAt || now;
+        transactionData.createdAt = transactionData.createdAt || now;
+
+        // ユーザーごとのコレクションに保存
+        const col = getUserTransactionsCollection();
+        await col.doc(String(transaction.id)).set(transactionData);
+        console.log('Firestoreに保存しました (ユーザー別):', transaction.id);
     } catch (error) {
         console.error('Firestore保存エラー:', error);
         // フォールバック: ローカルストレージにも保存
@@ -1186,8 +1211,14 @@ async function saveTransactionToFirestore(transaction) {
 // Firestoreから削除
 async function deleteTransactionFromFirestore(id) {
     try {
-        await db.collection('transactions').doc(String(id)).delete();
-        console.log('Firestoreから削除しました:', id);
+        if (!auth.currentUser) {
+            console.warn('ログインしていないため、Firestoreから削除できません');
+            return;
+        }
+
+        const col = getUserTransactionsCollection();
+        await col.doc(String(id)).delete();
+        console.log('Firestoreから削除しました (ユーザー別):', id);
     } catch (error) {
         console.error('Firestore削除エラー:', error);
     }
@@ -1207,34 +1238,46 @@ function loadTransactions() {
         renderTransactionList();
     }
 
+    // ログインしていない場合はローカルストレージのみ
+    if (!auth.currentUser) {
+        console.log('未ログイン：ローカルストレージのみ使用');
+        return;
+    }
+
     // Firestoreからリアルタイムで同期
     if (unsubscribeFirestore) {
         unsubscribeFirestore();
     }
 
-    unsubscribeFirestore = db.collection('transactions')
-        .orderBy('createdAt', 'desc')
-        .onSnapshot((snapshot) => {
-            transactions = [];
-            snapshot.forEach((doc) => {
-                transactions.push(doc.data());
+    try {
+        const col = getUserTransactionsCollection();
+        unsubscribeFirestore = col
+            .orderBy('createdAt', 'desc')
+            .onSnapshot((snapshot) => {
+                transactions = [];
+                snapshot.forEach((doc) => {
+                    transactions.push(doc.data());
+                });
+
+                // ローカルにもバックアップ（Firestoreのデータで上書き）
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+
+                updateMonthTabs();
+                updateTypeOptions();
+                renderTransactionList();
+                console.log('Firestoreから同期しました (ユーザー別):', transactions.length, '件');
+            }, (error) => {
+                console.error('Firestore同期エラー:', error);
+                // エラー時はローカルストレージから読み込み
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    transactions = JSON.parse(saved);
+                    renderTransactionList();
+                }
             });
-
-            // ローカルにもバックアップ（Firestoreのデータで上書き）
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-
-            updateMonthTabs();
-            updateTypeOptions();
-            renderTransactionList();
-            console.log('Firestoreから同期しました:', transactions.length, '件');
-        }, (error) => {
-            console.error('Firestore同期エラー:', error);
-            // エラー時はローカルストレージから読み込み
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                transactions = JSON.parse(saved);
-            }
-        });
+    } catch (error) {
+        console.error('Firestore接続エラー:', error);
+    }
 }
 
 // ローカルデータをFirestoreにアップロード
@@ -2508,3 +2551,148 @@ function loadZoomMemo() {
         textarea.value = saved;
     }
 }
+
+// ========== マイグレーション関連（Step2） ==========
+
+// 旧コレクション（/transactions）のバックアップ
+async function exportOldTransactions() {
+    try {
+        const snapshot = await db.collection('transactions').get();
+        const data = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `transactions_backup_before_migrate_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        console.log('バックアップ完了:', data.length, '件');
+        alert(`バックアップ完了: ${data.length}件のデータをダウンロードしました`);
+    } catch (error) {
+        console.error('バックアップエラー:', error);
+        alert('バックアップに失敗しました: ' + error.message);
+    }
+}
+
+// 旧コレクションから新コレクションへのマイグレーション
+async function migrateTransactionsToUserCollections() {
+    if (!confirm('旧データを新しい構造に移行します。この操作は時間がかかる場合があります。続行しますか？')) {
+        return;
+    }
+
+    if (!auth.currentUser) {
+        alert('ログインしてください');
+        return;
+    }
+
+    try {
+        const oldCol = db.collection('transactions');
+        const snapshot = await oldCol.get();
+
+        console.log('移行対象件数:', snapshot.size);
+
+        const batchSize = 300;
+        let batch = db.batch();
+        let counter = 0;
+        let skipped = 0;
+
+        for (const doc of snapshot.docs) {
+            const data = doc.data();
+
+            // userIdがない場合は現在のユーザーIDを使用
+            const userId = data.userId || auth.currentUser.uid;
+
+            // 新しい保存先
+            const newRef = db
+                .collection('users')
+                .doc(userId)
+                .collection('transactions')
+                .doc(doc.id);
+
+            // createdAt / updatedAt を補完
+            const now = Date.now();
+            const newData = {
+                ...data,
+                migratedFromRoot: true,
+                updatedAt: data.updatedAt || now,
+                createdAt: data.createdAt || now,
+            };
+
+            batch.set(newRef, newData);
+            counter++;
+
+            // バッチがいっぱいになったらコミット
+            if (counter % batchSize === 0) {
+                await batch.commit();
+                console.log('コミット:', counter, '件完了');
+                batch = db.batch();
+            }
+        }
+
+        // 残りをコミット
+        if (counter % batchSize !== 0) {
+            await batch.commit();
+            console.log('最終コミット:', counter, '件完了');
+        }
+
+        console.log('マイグレーション完了！合計', counter, '件');
+        alert(`マイグレーション完了！\n合計: ${counter}件\nスキップ: ${skipped}件\n\n旧データは残っています。確認後に手動で削除してください。`);
+
+        // データを再読み込み
+        loadTransactions();
+    } catch (error) {
+        console.error('マイグレーションエラー:', error);
+        alert('マイグレーションに失敗しました: ' + error.message);
+    }
+}
+
+// 旧コレクションを削除（確認後に実行）
+async function deleteOldTransactions() {
+    if (!confirm('⚠️ 警告：旧コレクション（/transactions）を完全に削除します。\n\nこの操作は取り消せません！\n新しい構造でデータが正しく移行されていることを確認しましたか？')) {
+        return;
+    }
+
+    if (!confirm('本当に削除しますか？もう一度確認してください。')) {
+        return;
+    }
+
+    try {
+        const oldCol = db.collection('transactions');
+        const snapshot = await oldCol.get();
+
+        const batchSize = 300;
+        let batch = db.batch();
+        let counter = 0;
+
+        for (const doc of snapshot.docs) {
+            batch.delete(doc.ref);
+            counter++;
+
+            if (counter % batchSize === 0) {
+                await batch.commit();
+                console.log('削除:', counter, '件完了');
+                batch = db.batch();
+            }
+        }
+
+        if (counter % batchSize !== 0) {
+            await batch.commit();
+        }
+
+        console.log('旧データ削除完了:', counter, '件');
+        alert(`旧データ削除完了: ${counter}件`);
+    } catch (error) {
+        console.error('削除エラー:', error);
+        alert('削除に失敗しました: ' + error.message);
+    }
+}
+
+// デバッグ用：コンソールからこれらの関数を呼び出せるようにグローバルに公開
+window.exportOldTransactions = exportOldTransactions;
+window.migrateTransactionsToUserCollections = migrateTransactionsToUserCollections;
+window.deleteOldTransactions = deleteOldTransactions;

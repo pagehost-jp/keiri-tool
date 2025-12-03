@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========== ユーザー管理コレクション ==========
+    match /users/{userId} {
+      // ユーザードキュメント自体は本人のみ読み書き可能
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+
+      // トランザクション（経理データ）
+      match /transactions/{transactionId} {
+        // 自分のデータのみアクセス可能
+        allow read, write: if request.auth != null
+                           && request.auth.uid == userId;
+      }
+    }
+
+    // ========== 共有用コレクション（将来の拡張用） ==========
+    match /shared/{sharedId} {
+      // 共有ドキュメント本体は直接触らせない
+      allow read, write: if false;
+
+      // 共有メンバー管理
+      match /members/{memberId} {
+        // メンバーは自分のメンバーシップを読める
+        allow read: if request.auth != null
+                    && request.auth.uid == memberId;
+
+        // オーナーまたは編集権限のあるメンバーのみ書き込み可能
+        allow write: if request.auth != null
+                     && (
+                       // オーナーの場合
+                       get(/databases/$(database)/documents/shared/$(sharedId)).data.ownerId == request.auth.uid
+                       // または、既存メンバーでeditor権限がある場合
+                       || (exists(/databases/$(database)/documents/shared/$(sharedId)/members/$(request.auth.uid))
+                           && get(/databases/$(database)/documents/shared/$(sharedId)/members/$(request.auth.uid)).data.role == 'editor')
+                     );
+      }
+
+      // 共有トランザクション
+      match /transactions/{transactionId} {
+        // メンバーのみ読み取り可能
+        allow read: if request.auth != null
+                    && exists(/databases/$(database)/documents/shared/$(sharedId)/members/$(request.auth.uid));
+
+        // editor権限を持つメンバーのみ書き込み可能
+        allow write: if request.auth != null
+                     && exists(/databases/$(database)/documents/shared/$(sharedId)/members/$(request.auth.uid))
+                     && get(/databases/$(database)/documents/shared/$(sharedId)/members/$(request.auth.uid)).data.role == 'editor';
+      }
+    }
+
+    // ========== それ以外は全てブロック ==========
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
