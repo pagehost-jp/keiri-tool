@@ -1887,6 +1887,7 @@ function setupAuth() {
         if (user) {
             currentUser = user;
             await checkUserStatus(user);
+            loadTransactions();  // ログイン後にFirestore監視を開始
         } else {
             currentUser = null;
             isAdmin = false;

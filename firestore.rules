@@ -8,6 +8,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null
                          && request.auth.uid == userId;
 
+      // 管理者は全ユーザーを読める
+      allow read: if request.auth != null
+                  && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+
       // トランザクション（経理データ）
       match /transactions/{transactionId} {
         // 自分のデータのみアクセス可能
