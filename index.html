@@ -36,7 +36,6 @@
                 </div>
             </div>
             <h1>📊 経理ツール</h1>
-            <p>領収書を撮影・アップロードして自動記録</p>
         </header>
 
         <!-- 承認待ち画面 -->
@@ -72,6 +71,16 @@
                     <input type="password" id="adminGeminiApiKey" placeholder="Gemini APIキー">
                     <button id="adminSaveApiKey" class="btn btn-primary btn-sm">保存</button>
                     <button id="adminClearApiKey" class="btn btn-secondary btn-sm">削除</button>
+                </div>
+            </div>
+
+            <!-- 使い方ガイド -->
+            <div class="admin-section">
+                <h4>使い方ガイド</h4>
+                <div class="admin-guide-links">
+                    <a href="iphone-guide.html" target="_blank" class="btn btn-secondary">
+                        📱 iPhoneで撮影する方へ
+                    </a>
                 </div>
             </div>
 
@@ -160,9 +169,6 @@
             <!-- 画像アップロードセクション -->
             <section class="upload-section">
                 <h2>領収書を追加</h2>
-                <p class="upload-hint">
-                    <a href="iphone-guide.html" class="guide-link">iPhoneで撮影する方へ：おすすめ設定ガイド</a>
-                </p>
                 <div class="upload-area" id="uploadArea">
                     <input type="file" id="fileInput" accept="image/*">
                     <label for="fileInput" class="upload-label">

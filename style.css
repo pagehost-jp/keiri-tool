@@ -1053,6 +1053,21 @@ h2 {
     font-size: 0.85em;
 }
 
+/* 管理者パネル：ガイドリンク */
+.admin-guide-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.admin-guide-links .btn {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
 /* 管理者用危険操作セクション */
 .admin-danger-section {
     margin: 0;
@@ -1240,17 +1255,64 @@ h2 {
 
 /* レスポンシブ対応（認証部分） */
 @media (max-width: 768px) {
+    header {
+        padding: 15px 15px 20px;
+    }
+
     .header-top {
+        position: static;
+        top: auto;
+        right: auto;
         justify-content: center;
+        margin-bottom: 15px;
     }
 
     .user-info {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        width: 100%;
+    }
+
+    .user-photo {
+        width: 28px;
+        height: 28px;
     }
 
     #userName {
+        font-size: 0.85em;
+        width: 100%;
+        text-align: center;
+    }
+
+    .user-role {
+        font-size: 0.75em;
+        padding: 3px 8px;
+    }
+
+    .btn-admin-toggle,
+    .btn-quick-memo,
+    .btn-zoom-memo {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2em;
+    }
+
+    .btn-logout {
+        font-size: 0.8em;
+        padding: 5px 12px;
+        width: 100%;
+    }
+
+    header h1 {
+        font-size: 1.6em;
+        margin-bottom: 8px;
+    }
+
+    header p {
         font-size: 0.9em;
     }
 
@@ -1258,6 +1320,39 @@ h2 {
         flex-direction: column;
         gap: 15px;
         text-align: center;
+    }
+
+    /* ログインボタン */
+    .btn-google {
+        padding: 8px 16px;
+        font-size: 0.9em;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-google img {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* 月別タブをさらにコンパクトに */
+    .month-tab {
+        padding: 8px 12px;
+        font-size: 0.8em;
+    }
+
+    .month-tab .count-badge {
+        font-size: 0.7em;
+        padding: 3px 6px;
+        min-width: 18px;
+    }
+
+    /* リストヘッダーのボタンもコンパクトに */
+    #quickMemoBtn2,
+    #downloadImagesBtn,
+    #exportBtn {
+        font-size: 0.9em;
+        padding: 10px 16px;
     }
 }
 
@@ -1455,28 +1550,6 @@ h2 {
     .detail-value {
         text-align: left;
     }
-}
-
-/* iPhoneガイドリンク */
-.upload-hint {
-    text-align: center;
-    margin-bottom: 15px;
-}
-
-.guide-link {
-    color: #667eea;
-    text-decoration: none;
-    font-size: 0.95em;
-    padding: 8px 16px;
-    border: 1px solid #667eea;
-    border-radius: 20px;
-    display: inline-block;
-    transition: all 0.2s;
-}
-
-.guide-link:hover {
-    background: #667eea;
-    color: white;
 }
 
 /* HEICプレビュー用プレースホルダー */
