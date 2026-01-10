@@ -2639,19 +2639,58 @@ function setupQuickMemo() {
 }
 
 // 簡易メモを保存
-function saveQuickMemo() {
+async function saveQuickMemo() {
     const textarea = document.getElementById('quickMemoTextarea');
     const content = textarea.value;
+
+    // LocalStorageにも保存（バックアップ）
     localStorage.setItem(QUICK_MEMO_KEY, content);
-    console.log('簡易メモを保存しました');
+
+    // Firestoreに保存（消えない）
+    try {
+        if (auth.currentUser) {
+            const memoRef = doc(db, 'users', auth.currentUser.uid, 'memos', 'quick_memo');
+            await setDoc(memoRef, {
+                content: content,
+                updatedAt: serverTimestamp()
+            });
+            console.log('簡易メモをFirestoreに保存しました');
+        } else {
+            console.log('ログインしていないため、LocalStorageのみに保存しました');
+        }
+    } catch (error) {
+        console.error('簡易メモのFirestore保存エラー:', error);
+        // エラーでもLocalStorageには保存済み
+    }
 }
 
-// 簡易メモを読み込み
+// 簡易メモを読み込み＋リアルタイム同期
 function loadQuickMemo() {
     const textarea = document.getElementById('quickMemoTextarea');
+
+    // まずLocalStorageから読み込み（即座に表示）
     const saved = localStorage.getItem(QUICK_MEMO_KEY);
     if (saved) {
         textarea.value = saved;
+    }
+
+    // Firestoreからリアルタイム同期
+    if (auth.currentUser) {
+        const memoRef = doc(db, 'users', auth.currentUser.uid, 'memos', 'quick_memo');
+
+        // リアルタイム監視
+        onSnapshot(memoRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.content !== undefined) {
+                    textarea.value = data.content;
+                    // LocalStorageにも同期
+                    localStorage.setItem(QUICK_MEMO_KEY, data.content);
+                }
+            }
+        }, (error) => {
+            console.error('簡易メモのFirestore読み込みエラー:', error);
+        });
     }
 }
 
@@ -2783,19 +2822,58 @@ function setupZoomMemo() {
 }
 
 // ZOOMメモを保存
-function saveZoomMemo() {
+async function saveZoomMemo() {
     const textarea = document.getElementById('zoomMemoTextarea');
     const content = textarea.value;
+
+    // LocalStorageにも保存（バックアップ）
     localStorage.setItem(ZOOM_MEMO_KEY, content);
-    console.log('ZOOMメモを保存しました');
+
+    // Firestoreに保存（消えない）
+    try {
+        if (auth.currentUser) {
+            const memoRef = doc(db, 'users', auth.currentUser.uid, 'memos', 'zoom_memo');
+            await setDoc(memoRef, {
+                content: content,
+                updatedAt: serverTimestamp()
+            });
+            console.log('ZOOMメモをFirestoreに保存しました');
+        } else {
+            console.log('ログインしていないため、LocalStorageのみに保存しました');
+        }
+    } catch (error) {
+        console.error('ZOOMメモのFirestore保存エラー:', error);
+        // エラーでもLocalStorageには保存済み
+    }
 }
 
-// ZOOMメモを読み込み
+// ZOOMメモを読み込み＋リアルタイム同期
 function loadZoomMemo() {
     const textarea = document.getElementById('zoomMemoTextarea');
+
+    // まずLocalStorageから読み込み（即座に表示）
     const saved = localStorage.getItem(ZOOM_MEMO_KEY);
     if (saved) {
         textarea.value = saved;
+    }
+
+    // Firestoreからリアルタイム同期
+    if (auth.currentUser) {
+        const memoRef = doc(db, 'users', auth.currentUser.uid, 'memos', 'zoom_memo');
+
+        // リアルタイム監視
+        onSnapshot(memoRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.content !== undefined) {
+                    textarea.value = data.content;
+                    // LocalStorageにも同期
+                    localStorage.setItem(ZOOM_MEMO_KEY, data.content);
+                }
+            }
+        }, (error) => {
+            console.error('ZOOMメモのFirestore読み込みエラー:', error);
+        });
     }
 }
 
