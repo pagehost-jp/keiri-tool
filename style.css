@@ -2066,3 +2066,175 @@ h2 {
     color: white;
     border-color: #667eea;
 }
+
+/* ========== メインタブナビゲーション ========== */
+.main-tabs {
+    display: flex;
+    gap: 10px;
+    padding: 15px 20px;
+    background: white;
+    border-bottom: 2px solid #eee;
+    margin-bottom: 0;
+}
+
+.main-tab {
+    padding: 12px 30px;
+    border: none;
+    background: #f5f5f5;
+    color: #666;
+    border-radius: 8px 8px 0 0;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.main-tab:hover {
+    background: #e8e8e8;
+    color: #333;
+}
+
+.main-tab.active {
+    background: white;
+    color: #667eea;
+    border-bottom: 3px solid #667eea;
+}
+
+.tab-content {
+    display: block;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* ========== メモタブのレイアウト ========== */
+.memo-section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+.memo-section h2 {
+    font-size: 2em;
+    color: #333;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.memo-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.memo-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: box-shadow 0.3s ease;
+}
+
+.memo-card:hover {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+}
+
+.memo-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.memo-card-header h3 {
+    font-size: 1.3em;
+    color: #333;
+    margin: 0;
+}
+
+.memo-auto-save {
+    font-size: 0.75em;
+    color: #999;
+    background: #f8f9ff;
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1px solid #e0e0ff;
+}
+
+.memo-description {
+    color: #666;
+    font-size: 0.9em;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.memo-textarea {
+    width: 100%;
+    min-height: 400px;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.3s ease;
+    line-height: 1.6;
+}
+
+.memo-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.memo-status {
+    text-align: right;
+    padding-top: 10px;
+}
+
+.memo-status span {
+    font-size: 0.85em;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+/* レスポンシブ対応（メモタブ） */
+@media (max-width: 1024px) {
+    .memo-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-tabs {
+        padding: 10px 15px;
+    }
+
+    .main-tab {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+
+    .memo-section {
+        padding: 20px 15px;
+    }
+
+    .memo-section h2 {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+    }
+
+    .memo-card {
+        padding: 20px;
+    }
+
+    .memo-textarea {
+        min-height: 300px;
+    }
+}

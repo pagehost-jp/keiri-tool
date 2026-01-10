@@ -219,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFormValidation();
     setupApiSettingsListeners();
     setupMemoSuggestion();
+    setupMainTabs();  // メインタブ切り替えの初期化
     setupQuickMemo();  // 簡易メモ機能の初期化
     setupZoomMemo();  // ZOOMメモ機能の初期化
 });
@@ -2575,67 +2576,57 @@ async function clearUserApiKey() {
     }
 }
 
+// ========== メインタブ切り替え ==========
+
+function setupMainTabs() {
+    const tabButtons = document.querySelectorAll('.main-tab');
+    const homeTab = document.getElementById('homeTab');
+    const memoTab = document.getElementById('memoTab');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+
+            // すべてのタブボタンとコンテンツから activeクラスを削除
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            homeTab.classList.add('hidden');
+            memoTab.classList.add('hidden');
+
+            // クリックされたタブをアクティブに
+            button.classList.add('active');
+
+            if (targetTab === 'home') {
+                homeTab.classList.remove('hidden');
+            } else if (targetTab === 'memo') {
+                memoTab.classList.remove('hidden');
+                // メモタブを開いたときにメモを読み込む
+                loadQuickMemo();
+                loadZoomMemo();
+            }
+        });
+    });
+}
+
 // ========== 簡易メモ機能 ==========
 
 // 簡易メモの初期化
 function setupQuickMemo() {
-    const quickMemoBtn = document.getElementById('quickMemoBtn');
-    const quickMemoBtn2 = document.getElementById('quickMemoBtn2'); // 記録一覧のボタン
-    const closeQuickMemo = document.getElementById('closeQuickMemo');
-    const quickMemoOverlay = document.getElementById('quickMemoOverlay');
-    const quickMemoModal = document.getElementById('quickMemoModal');
     const quickMemoTextarea = document.getElementById('quickMemoTextarea');
     const quickMemoStatus = document.getElementById('quickMemoStatus');
 
-    // メモを開く関数
-    const openQuickMemo = () => {
-        quickMemoOverlay.classList.remove('hidden');
-        quickMemoModal.classList.remove('hidden');
-        loadQuickMemo();
-        quickMemoTextarea.focus();
-    };
-
-    // ヘッダーのボタン
-    quickMemoBtn.addEventListener('click', openQuickMemo);
-
-    // 記録一覧のボタン
-    quickMemoBtn2.addEventListener('click', openQuickMemo);
-
-    // メモを閉じる
-    function closeModal() {
-        quickMemoOverlay.classList.add('hidden');
-        quickMemoModal.classList.add('hidden');
-    }
-
-    closeQuickMemo.addEventListener('click', closeModal);
-    quickMemoOverlay.addEventListener('click', closeModal);
-
-    // ESCキーで閉じる（簡易メモとZOOMメモの両方に対応）
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            if (!quickMemoModal.classList.contains('hidden')) {
-                closeModal();
-            }
-        }
-    });
+    // ページ読み込み時にメモを読み込み
+    loadQuickMemo();
 
     // 自動保存（入力から1秒後）
     let saveTimeout;
     quickMemoTextarea.addEventListener('input', () => {
+        quickMemoStatus.textContent = '保存中...';
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
             saveQuickMemo();
-            showSaveStatus();
+            quickMemoStatus.textContent = '保存済み';
         }, 1000);
     });
-
-    // 保存完了メッセージを表示
-    function showSaveStatus() {
-        quickMemoStatus.classList.add('visible');
-        setTimeout(() => {
-            quickMemoStatus.classList.remove('visible');
-        }, 2000);
-    }
 }
 
 // 簡易メモを保存
@@ -2771,54 +2762,22 @@ function formatBytes(bytes) {
 
 // ZOOMメモの初期化
 function setupZoomMemo() {
-    const zoomMemoBtn = document.getElementById('zoomMemoBtn');
-    const closeZoomMemo = document.getElementById('closeZoomMemo');
-    const zoomMemoOverlay = document.getElementById('zoomMemoOverlay');
-    const zoomMemoModal = document.getElementById('zoomMemoModal');
     const zoomMemoTextarea = document.getElementById('zoomMemoTextarea');
     const zoomMemoStatus = document.getElementById('zoomMemoStatus');
 
-    // メモを開く
-    zoomMemoBtn.addEventListener('click', () => {
-        zoomMemoOverlay.classList.remove('hidden');
-        zoomMemoModal.classList.remove('hidden');
-        loadZoomMemo();
-        zoomMemoTextarea.focus();
-    });
-
-    // メモを閉じる
-    function closeModal() {
-        zoomMemoOverlay.classList.add('hidden');
-        zoomMemoModal.classList.add('hidden');
-    }
-
-    closeZoomMemo.addEventListener('click', closeModal);
-    zoomMemoOverlay.addEventListener('click', closeModal);
-
-    // ESCキーで閉じる
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !zoomMemoModal.classList.contains('hidden')) {
-            closeModal();
-        }
-    });
+    // ページ読み込み時にメモを読み込み
+    loadZoomMemo();
 
     // 自動保存（入力から1秒後）
     let saveTimeout;
     zoomMemoTextarea.addEventListener('input', () => {
+        zoomMemoStatus.textContent = '保存中...';
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
             saveZoomMemo();
-            showSaveStatus();
+            zoomMemoStatus.textContent = '保存済み';
         }, 1000);
     });
-
-    // 保存完了メッセージを表示
-    function showSaveStatus() {
-        zoomMemoStatus.classList.add('visible');
-        setTimeout(() => {
-            zoomMemoStatus.classList.remove('visible');
-        }, 2000);
-    }
 }
 
 // ZOOMメモを保存
