@@ -345,6 +345,10 @@ function setupEventListeners() {
     // エクスポートボタン
     exportBtn.addEventListener('click', exportToExcel);
 
+    // 全データ一括ダウンロードボタン
+    const btnBulkDownload = document.getElementById('btnBulkDownload');
+    btnBulkDownload.addEventListener('click', downloadAllDataAsZip);
+
     // 画像ダウンロードボタン
     const downloadImagesBtn = document.getElementById('downloadImagesBtn');
     downloadImagesBtn.addEventListener('click', downloadImages);
@@ -1107,8 +1111,8 @@ function renderTransactionList() {
         return true;
     });
 
-    // 日付順にソート（古い順 = 昇順）
-    filteredTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // 日付順にソート（新しい順 = 降順）
+    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // フィルターサマリー表示
     if (currentFilters.year || currentFilters.month || currentFilters.type || currentFilters.keyword) {
@@ -1693,6 +1697,89 @@ function exportToExcel() {
     alert(`${filename} をダウンロードしました`);
 }
 
+// 全データ一括ダウンロード（画像を含むZIP）
+async function downloadAllDataAsZip() {
+    try {
+        // ローディング表示
+        alert('ZIPファイルを生成中です。画像が多いと時間がかかります...');
+        console.log('ZIP生成開始');
+
+        // JSZipの初期化
+        const zip = new JSZip();
+
+        // JSONデータをZIPに追加
+        const jsonData = JSON.stringify(transactions, null, 2);
+        zip.file('transactions.json', jsonData);
+        console.log('transactions.json を追加しました');
+
+        // receipts フォルダを作成
+        const receiptsFolder = zip.folder('receipts');
+
+        // 画像データの並列ダウンロードとアタッチ
+        const imagePromises = [];
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const transaction of transactions) {
+            if (transaction.imageUrl) {
+                const imagePromise = (async () => {
+                    try {
+                        console.log(`画像取得中: ${transaction.id}`);
+                        const response = await fetch(transaction.imageUrl);
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const blob = await response.blob();
+
+                        // 画像の拡張子を取得（デフォルトはjpg）
+                        const contentType = blob.type;
+                        let extension = 'jpg';
+                        if (contentType.includes('png')) extension = 'png';
+                        else if (contentType.includes('jpeg')) extension = 'jpg';
+                        else if (contentType.includes('jpg')) extension = 'jpg';
+
+                        const filename = `${transaction.id}.${extension}`;
+                        receiptsFolder.file(filename, blob);
+                        successCount++;
+                        console.log(`画像追加成功: ${filename}`);
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`画像取得失敗 (ID: ${transaction.id}):`, error);
+                    }
+                })();
+
+                imagePromises.push(imagePromise);
+            }
+        }
+
+        // すべての画像のダウンロードを待つ
+        await Promise.all(imagePromises);
+        console.log(`画像処理完了: 成功 ${successCount}件、失敗 ${errorCount}件`);
+
+        // ZIPの生成
+        console.log('ZIP生成中...');
+        const content = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: {
+                level: 6
+            }
+        });
+
+        // ZIPファイルの保存
+        const filename = `keiri_full_backup_${new Date().toISOString().split('T')[0]}.zip`;
+        saveAs(content, filename);
+
+        console.log('ZIP生成完了');
+        alert(`完了しました！\n\n取引データ: ${transactions.length}件\n画像: ${successCount}件（失敗: ${errorCount}件）\n\nファイル名: ${filename}`);
+    } catch (error) {
+        console.error('ZIP生成エラー:', error);
+        alert('ZIP生成中にエラーが発生しました: ' + error.message);
+    }
+}
+
 // 画像ダウンロード（フィルター表示中のもの）
 async function downloadImages() {
     // フィルター適用済みの取引を取得
@@ -1732,8 +1819,8 @@ async function downloadImages() {
         return true;
     });
 
-    // 日付順にソート（古い順 = 昇順）
-    filteredTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // 日付順にソート（新しい順 = 降順）
+    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // 画像があるものだけを抽出
     const imagesWithData = filteredTransactions.filter(t => t.imageUrl);
